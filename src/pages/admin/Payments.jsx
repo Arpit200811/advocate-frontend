@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import Swal from "sweetalert2";
+
 import {
   MdPayments,
   MdTrendingUp,
@@ -10,41 +12,44 @@ import {
   MdCheckCircle,
   MdPending,
   MdError,
+  MdSearchOff,
+  MdChevronLeft,
+  MdChevronRight,
 } from "react-icons/md";
+import { useData } from "../../context/DataContext";
 
 const Payments = () => {
-  const [payments, setPayments] = useState([
-    {
-      id: "TR-9401",
-      user: "David Chen",
-      lawyer: "Sarah Jenkins",
-      amount: "$150.00",
-      status: "Successful",
-      date: "Oct 12, 2023",
-      method: "Visa •••• 4242",
-    },
-    {
-      id: "TR-9398",
-      user: "Michael Scott",
-      lawyer: "Jonathan Doe",
-      amount: "$320.00",
-      status: "Successful",
-      date: "Oct 11, 2023",
-      method: "Mastercard •••• 8812",
-    },
-    {
-      id: "TR-9395",
-      user: "Robert Wilson",
-      lawyer: "Sarah Jenkins",
-      amount: "$85.00",
-      status: "Failed",
-      date: "Oct 10, 2023",
-      method: "Visa •••• 1121",
-    },
-  ]);
+  const { payments, setPayments } = useData();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  const handleRefund = (id) => {
+    Swal.fire({
+      title: "Process Refund?",
+      text: `Are you sure you want to refund transaction ${id}? This action cannot be undone.`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#64748b",
+      confirmButtonText: "Yes, Process Refund",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        setPayments((prev) =>
+          prev.map((p) => (p.id === id ? { ...p, status: "Refunded" } : p))
+        );
+        Swal.fire({
+          title: "Refund Processed",
+          text: "The transaction has been successfully refunded.",
+          icon: "success",
+          timer: 1500,
+          showConfirmButton: false,
+        });
+      }
+    });
+  };
 
   const filteredPayments = payments.filter((payment) => {
     const matchesSearch =
@@ -54,6 +59,47 @@ const Payments = () => {
     const matchesStatus = statusFilter === "All" || payment.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  const totalPages = Math.ceil(filteredPayments.length / rowsPerPage);
+  const paginatedPayments = filteredPayments.slice(
+    (currentPage - 1) * rowsPerPage,
+    currentPage * rowsPerPage
+  );
+
+  const grossRevenue = payments.reduce((acc, curr) => {
+    const val = parseFloat(curr.amount.replace('$', '').replace(',', '')) || 0;
+    return acc + val;
+  }, 0);
+
+  const platformComm = grossRevenue * 0.15;
+  const pendingClearance = payments.filter(p => p.status === 'Pending').length * 350; // Mock calculation
+
+  const handleExportCSV = () => {
+    const headers = ["ID", "User", "Lawyer", "Amount", "Status", "Date"];
+    const csvContent = [
+      headers.join(","),
+      ...filteredPayments.map(p => `${p.id},${p.user},${p.lawyer},${p.amount},${p.status},${p.date}`)
+    ].join("\n");
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `payments_export_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    Swal.fire({
+      title: "Exported!",
+      text: `${filteredPayments.length} transactions exported to CSV.`,
+      icon: "success",
+      timer: 1500,
+      showConfirmButton: false,
+      confirmButtonColor: "#197fe6"
+    });
+  };
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -71,34 +117,37 @@ const Payments = () => {
           </p>
         </div>
         <div className="flex gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark rounded-lg text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm font-bold">
+          <button 
+            onClick={handleExportCSV}
+            className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-[#1c1c27] border border-slate-200 dark:border-[#3d3b54] rounded-lg text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-[#2a2839] transition-colors shadow-sm"
+          >
             <MdDownload className="text-xl" />
-            Export Monthly Report
+            <span className="hidden sm:inline">Export Report</span>
           </button>
         </div>
       </div>
 
       {/* KPI Overviews */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
           {
             label: "Gross Revenue",
-            value: "$124,500",
+            value: `$${grossRevenue.toLocaleString()}`,
             trend: "+12.5%",
             icon: MdPayments,
             color: "primary",
           },
           {
             label: "Platform Comm.",
-            value: "$18,675",
+            value: `$${platformComm.toLocaleString()}`,
             trend: "15% fixed rate",
             icon: MdTrendingUp,
             color: "emerald",
           },
           {
             label: "Pending Clearance",
-            value: "$4,200",
-            trend: "12 transactions",
+            value: `$${pendingClearance.toLocaleString()}`,
+            trend: `${payments.filter(p => p.status === 'Pending').length} transactions`,
             icon: MdHistory,
             color: "amber",
           },
@@ -112,7 +161,7 @@ const Payments = () => {
         ].map((kpi, i) => (
           <div
             key={i}
-            className="bg-white dark:bg-surface-dark p-6 rounded-xl border border-slate-200 dark:border-border-dark shadow-sm"
+            className="bg-white dark:bg-[#1c1c27] p-6 rounded-xl border border-slate-200 dark:border-[#3d3b54] shadow-sm transform hover:scale-[1.02] transition-all"
           >
             <div className="flex justify-between items-start mb-4">
               <div
@@ -128,11 +177,11 @@ const Payments = () => {
               >
                 <kpi.icon className="text-2xl" />
               </div>
-              <span className="text-[10px] font-black bg-slate-100 dark:bg-background-dark px-2 py-1 rounded-full text-slate-500 uppercase tracking-wider">
+              <span className="text-[10px] font-black bg-slate-100 dark:bg-[#252533] px-2 py-1 rounded-full text-slate-500 dark:text-[#9f9db9] uppercase tracking-wider">
                 {kpi.trend}
               </span>
             </div>
-            <p className="text-slate-500 dark:text-slate-400 text-sm font-medium mb-1">
+            <p className="text-slate-500 dark:text-[#9f9db9] text-sm font-medium mb-1">
               {kpi.label}
             </p>
             <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
@@ -145,23 +194,29 @@ const Payments = () => {
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
         {/* Main Transaction Feed */}
         <div className="xl:col-span-12 space-y-4">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white">Transactions History</h3>
-            <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-4">
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white">Transaction History</h3>
+            <div className="flex flex-wrap items-center gap-3">
               <div className="relative">
-                <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg" />
                 <input
                   type="text"
-                  placeholder="Filter transactions..."
-                  className="bg-slate-100 dark:bg-surface-dark border-none rounded-lg pl-9 pr-4 py-1.5 text-xs focus:ring-1 focus:ring-primary/30 w-48 text-slate-900 dark:text-white"
+                  placeholder="Filter..."
+                  className="bg-white dark:bg-[#1c1c27] border border-slate-200 dark:border-[#3d3b54] rounded-lg pl-9 pr-4 py-2 text-xs focus:ring-1 focus:ring-primary w-full sm:w-48 text-slate-900 dark:text-white"
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setCurrentPage(1);
+                  }}
                 />
               </div>
               <select
-                className="bg-slate-100 dark:bg-surface-dark border-none rounded-lg px-3 py-1.5 text-xs font-bold text-slate-600 dark:text-slate-300 outline-none focus:ring-1 focus:ring-primary/30"
+                className="bg-white dark:bg-[#1c1c27] border border-slate-200 dark:border-[#3d3b54] rounded-lg px-3 py-2 text-xs font-bold text-slate-600 dark:text-[#9f9db9] outline-none focus:ring-1 focus:ring-primary"
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
               >
                 <option value="All">All Status</option>
                 <option value="Successful">Successful</option>
@@ -170,51 +225,51 @@ const Payments = () => {
             </div>
           </div>
 
-          <div className="bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark rounded-xl overflow-hidden shadow-sm">
+          <div className="bg-white dark:bg-[#1c1c27] border border-slate-200 dark:border-[#3d3b54] rounded-xl overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-slate-50 dark:bg-background-dark/50 border-b border-slate-200 dark:border-border-dark">
-                    <th className="px-6 py-4 text-xs font-black uppercase tracking-wider text-slate-400">
+                  <tr className="bg-slate-50 dark:bg-[#252533] border-b border-slate-200 dark:border-[#3d3b54]">
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.15em] text-slate-500 dark:text-[#9f9db9]">
                       Trans. ID
                     </th>
-                    <th className="px-6 py-4 text-xs font-black uppercase tracking-wider text-slate-400">
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.15em] text-slate-500 dark:text-[#9f9db9]">
                       User
                     </th>
-                    <th className="px-6 py-4 text-xs font-black uppercase tracking-wider text-slate-400">
+                    <th className="hidden sm:table-cell px-6 py-4 text-[10px] font-black uppercase tracking-[0.15em] text-slate-500 dark:text-[#9f9db9]">
                       Lawyer
                     </th>
-                    <th className="px-6 py-4 text-xs font-black uppercase tracking-wider text-slate-400">
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.15em] text-slate-500 dark:text-[#9f9db9]">
                       Amount
                     </th>
-                    <th className="px-6 py-4 text-xs font-black uppercase tracking-wider text-slate-400">
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.15em] text-slate-500 dark:text-[#9f9db9]">
                       Status
                     </th>
-                    <th className="px-6 py-4 text-xs font-black uppercase tracking-wider text-slate-400">
+                    <th className="hidden lg:table-cell px-6 py-4 text-[10px] font-black uppercase tracking-[0.15em] text-slate-500 dark:text-[#9f9db9]">
                       Date
                     </th>
-                    <th className="px-6 py-4 text-xs font-black uppercase tracking-wider text-slate-400 text-right">
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.15em] text-slate-500 dark:text-[#9f9db9] text-right">
                       Actions
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-border-dark">
-                  {filteredPayments.length > 0 ? (
-                    filteredPayments.map((payment) => (
+                <tbody className="divide-y divide-slate-100 dark:divide-[#3d3b54]">
+                  {paginatedPayments.length > 0 ? (
+                    paginatedPayments.map((payment) => (
                       <tr
                         key={payment.id}
-                        className="hover:bg-slate-50 dark:hover:bg-background-dark/30 transition-colors group"
+                        className="hover:bg-slate-50 dark:hover:bg-[#252533] transition-colors group"
                       >
-                        <td className="px-6 py-4 text-sm font-bold text-slate-400">
+                        <td className="px-6 py-4 text-[10px] font-black text-slate-400 tracking-wider">
                           {payment.id}
                         </td>
                         <td className="px-6 py-4">
-                          <p className="text-sm font-bold text-slate-900 dark:text-white">
+                          <p className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-tight">
                             {payment.user}
                           </p>
                         </td>
-                        <td className="px-6 py-4">
-                          <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                        <td className="hidden sm:table-cell px-6 py-4">
+                          <p className="text-sm font-medium text-slate-500 dark:text-[#9f9db9]">
                             {payment.lawyer}
                           </p>
                         </td>
@@ -237,15 +292,18 @@ const Payments = () => {
                             {payment.status}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-sm text-slate-500 dark:text-slate-400">
+                        <td className="hidden lg:table-cell px-6 py-4 text-xs font-bold text-slate-500 dark:text-[#9f9db9]">
                           {payment.date}
                         </td>
                         <td className="px-6 py-4 text-right">
-                          <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button className="p-1.5 bg-slate-100 dark:bg-background-dark rounded-lg text-slate-500 hover:text-primary transition-colors">
+                          <div className="flex items-center justify-end gap-2 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button className="p-1.5 bg-slate-100 dark:bg-[#2a2839] rounded-lg text-slate-500 hover:text-primary transition-colors">
                               <MdHistory className="text-lg" />
                             </button>
-                            <button className="p-1.5 bg-slate-100 dark:bg-background-dark rounded-lg text-slate-500 hover:text-primary transition-colors font-bold">
+                            <button 
+                              onClick={() => handleRefund(payment.id)}
+                              className="p-1.5 bg-slate-100 dark:bg-[#2a2839] rounded-lg text-slate-500 hover:text-red-500 transition-colors font-bold text-xs uppercase"
+                            >
                               Refund
                             </button>
                           </div>
@@ -254,13 +312,62 @@ const Payments = () => {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="7" className="px-6 py-10 text-center text-slate-500 dark:text-slate-400">
-                        No transactions found matching your filters.
+                      <td colSpan="7" className="py-20 text-center">
+                        <div className="flex flex-col items-center justify-center opacity-40">
+                          <MdSearchOff className="text-6xl text-slate-300 dark:text-[#3d3b54] mb-4" />
+                          <p className="text-sm font-black uppercase tracking-[0.2em] text-slate-500">No transactions found</p>
+                          <button 
+                            onClick={() => {setSearchQuery(""); setStatusFilter("All");}}
+                            className="mt-4 text-xs font-bold text-primary hover:underline"
+                          >
+                            Reset filters
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   )}
                 </tbody>
               </table>
+            </div>
+
+            {/* Pagination */}
+            <div className="p-4 bg-slate-50 dark:bg-[#252533] border-t border-slate-200 dark:border-[#3d3b54] flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black uppercase text-slate-500 dark:text-[#9f9db9] tracking-widest">Rows:</span>
+                <select 
+                  value={rowsPerPage}
+                  onChange={(e) => {
+                    setRowsPerPage(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="bg-white dark:bg-[#1c1c27] border border-slate-200 dark:border-[#3d3b54] rounded-lg text-xs font-bold px-2 py-1 outline-none focus:ring-2 focus:ring-primary/20 transition-all text-slate-900 dark:text-white"
+                >
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                </select>
+              </div>
+              <div className="flex items-center gap-4">
+                <span className="text-xs font-bold text-slate-500 dark:text-[#9f9db9]">
+                  Page {currentPage} of {totalPages || 1}
+                </span>
+                <div className="flex gap-1">
+                  <button 
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    className="p-1 hover:bg-slate-200 dark:hover:bg-[#3d3b54] rounded-md transition-colors disabled:opacity-30 text-slate-400" 
+                    disabled={currentPage === 1}
+                  >
+                    <MdChevronLeft className="text-2xl" />
+                  </button>
+                  <button 
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    className="p-1 hover:bg-slate-200 dark:hover:bg-[#3d3b54] rounded-md transition-colors disabled:opacity-30 text-slate-600 dark:text-slate-300"
+                    disabled={currentPage === totalPages || totalPages === 0}
+                  >
+                    <MdChevronRight className="text-2xl" />
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>

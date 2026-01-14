@@ -2,9 +2,10 @@ import React, { useState } from "react";
 import { MdSearch, MdAdd, MdPayments, MdStars, MdTrendingUp, MdPercent, MdMonetizationOn, MdPersonAdd, MdGroup, MdHistory, MdBusiness, MdMoreVert, MdChevronLeft, MdChevronRight, MdLightbulb } from "react-icons/md";
 import { Link } from "react-router-dom";
 import { initialOffers } from "../../data/mockData";
+import { useData } from "../../context/DataContext";
 
 const Promotions = () => {
-  const [offers, setOffers] = useState(initialOffers);
+  const { offers } = useData();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("All Offers");
 

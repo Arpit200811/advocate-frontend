@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import Swal from "sweetalert2";
+
 import {
   MdSearch,
   MdFilterList,
@@ -11,51 +13,50 @@ import {
   MdWarning,
   MdPerson,
 } from "react-icons/md";
+import { useData } from "../../context/DataContext";
 
 const Disputes = () => {
-  const [disputes, setDisputes] = useState([
-    {
-      id: "DIS-4201",
-      user: "Michael Scott",
-      lawyer: "Jonathan Doe",
-      status: "Open",
-      priority: "High",
-      date: "2 hours ago",
-      subject: "Poor consultation quality",
-      description: "The lawyer was 15 minutes late and didn't provide any concrete legal advice during the session.",
-      amount: "$150.00",
-    },
-    {
-      id: "DIS-4198",
-      user: "Pam Beesly",
-      lawyer: "Sarah Jenkins",
-      status: "In Progress",
-      priority: "Medium",
-      date: "5 hours ago",
-      subject: "Technical issues during call",
-      description: "Audio kept cutting out, making it impossible to hear the lawyer's instructions.",
-      amount: "$85.00",
-    },
-    {
-      id: "DIS-4195",
-      user: "Jim Halpert",
-      lawyer: "Sarah Jenkins",
-      status: "Resolved",
-      priority: "Low",
-      date: "1 day ago",
-      subject: "Refund request for cancelled session",
-      description: "The session was cancelled by the lawyer, but the refund hasn't been processed yet.",
-      amount: "$200.00",
-    },
-  ]);
+  const { disputes, setDisputes } = useData();
 
-  const [selectedDisputeId, setSelectedDisputeId] = useState(disputes[0].id);
+  const [selectedDisputeId, setSelectedDisputeId] = useState(disputes?.[0]?.id || null);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const selectedDispute = disputes.find(d => d.id === selectedDisputeId) || disputes[0];
+  const selectedDispute = disputes.find(d => d.id === selectedDisputeId) || disputes?.[0] || null;
 
   const handleResolve = (id) => {
-    setDisputes(prev => prev.map(d => d.id === id ? { ...d, status: "Resolved" } : d));
+    Swal.fire({
+      title: "Resolve Dispute?",
+      text: `Are you sure you want to mark case ${id} as resolved?`,
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonColor: "#22c55e",
+      confirmButtonText: "Yes, Resolve",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        setDisputes((prev) =>
+          prev.map((d) => (d.id === id ? { ...d, status: "Resolved" } : d))
+        );
+        Swal.fire("Success", "The case has been marked as resolved.", "success");
+      }
+    });
+  };
+
+  const handleRefund = (id, amount) => {
+    Swal.fire({
+      title: "Issue Refund?",
+      text: `Confirm $${amount} refund for case ${id}. This will also mark the case as resolved.`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#ef4444",
+      confirmButtonText: "Confirm Refund",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        setDisputes((prev) =>
+          prev.map((d) => (d.id === id ? { ...d, status: "Resolved", refunded: true } : d))
+        );
+        Swal.fire("Refunded", "Refund has been processed and case resolved.", "success");
+      }
+    });
   };
 
   const filteredDisputes = disputes.filter(d => 
@@ -63,6 +64,16 @@ const Disputes = () => {
     d.lawyer.toLowerCase().includes(searchQuery.toLowerCase()) ||
     d.id.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  if (!disputes || disputes.length === 0) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center p-8 bg-slate-50 dark:bg-background-dark -m-8 h-[calc(100vh-4rem)]">
+        <MdGavel className="text-8xl text-slate-200 dark:text-[#3d3b54] mb-4" />
+        <h2 className="text-xl font-black text-slate-400 uppercase tracking-widest">No Disputes Filed</h2>
+        <p className="text-slate-500 mt-2">The dispute resolution queue is currently empty.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-[calc(100vh-140px)] animate-in fade-in duration-500">
@@ -188,12 +199,16 @@ const Disputes = () => {
                 <button 
                   onClick={() => handleResolve(selectedDispute.id)}
                   disabled={selectedDispute.status === "Resolved"}
-                  className="flex-1 bg-primary text-white font-bold py-3 rounded-xl hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 disabled:opacity-50 font-bold"
+                  className="flex-1 bg-primary text-white font-bold py-3 rounded-xl hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   <MdCheckCircle className="text-xl" />
                   Resolve Case
                 </button>
-                <button className="flex-1 bg-rose-500 text-white font-bold py-3 rounded-xl hover:bg-rose-600 transition-all shadow-lg shadow-rose-500/20 flex items-center justify-center gap-2 font-bold">
+                <button 
+                  onClick={() => handleRefund(selectedDispute.id, selectedDispute.amount)}
+                  disabled={selectedDispute.status === "Resolved"}
+                  className="flex-1 bg-rose-500 text-white font-bold py-3 rounded-xl hover:bg-rose-600 transition-all shadow-lg shadow-rose-500/20 flex items-center justify-center gap-2 disabled:opacity-50"
+                >
                   <MdCancel className="text-xl" />
                   Issue Refund
                 </button>

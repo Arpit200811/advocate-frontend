@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import Swal from "sweetalert2";
 import { Link, useNavigate } from "react-router-dom";
 import {
   MdChevronRight,
@@ -17,19 +18,45 @@ import {
   MdPeople,
   MdBusiness,
 } from "react-icons/md";
+import { useData } from "../../context/DataContext";
 
 const CreateOffer = () => {
   const navigate = useNavigate();
+  const { setOffers } = useData();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
-    internalName: "",
-    displayTitle: "New Client Special",
-    description: "Get 20% off your first legal consultation",
-    discountType: "Percentage",
-    value: 20,
-    minSpend: 50,
     promoCode: "WELCOME20",
   });
+  const [errors, setErrors] = useState({});
+
+  const validateStep = (currentStep) => {
+    const newErrors = {};
+    if (currentStep === 1) {
+      if (!formData.internalName.trim()) newErrors.internalName = "Internal Name is required";
+      if (!formData.displayTitle.trim()) newErrors.displayTitle = "Display Title is required";
+      if (!formData.description.trim()) newErrors.description = "Description is required";
+    }
+    if (currentStep === 2) {
+      if (!formData.value || formData.value <= 0) newErrors.value = "Value must be greater than 0";
+      if (!formData.promoCode.trim()) newErrors.promoCode = "Promo code is required";
+      if (formData.promoCode.length < 5) newErrors.promoCode = "Promo code too short";
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleNext = () => {
+    if (validateStep(step)) {
+      setStep(prev => prev + 1);
+    } else {
+      Swal.fire({
+        title: "Incomplete details",
+        text: "Please fill in all required fields correctly to proceed.",
+        icon: "warning",
+        confirmButtonColor: "#197fe6"
+      });
+    }
+  };
 
   const generatePromoCode = () => {
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -43,11 +70,43 @@ const CreateOffer = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: null }));
+    }
   };
 
   const handleLaunch = () => {
-    alert("Offer Launched Successfully!");
-    navigate("/admin/promotions");
+    if (!validateStep(1) || !validateStep(2)) {
+      Swal.fire({
+        title: "Validation Failed",
+        text: "Please check all steps for missing or incorrect information.",
+        icon: "error",
+      });
+      return;
+    }
+
+    const newOffer = {
+      id: `OFF-${Math.floor(Math.random() * 9000) + 1000}`,
+      name: formData.internalName || formData.displayTitle,
+      type: `${formData.discountType} (${formData.discountType === 'Percentage' ? formData.value + '%' : '$' + formData.value})`,
+      audience: "All Users", // Default for now
+      audienceIcon: "group",
+      duration: "30 Days", // Default for now
+      year: "2024",
+      usage: 0,
+      status: "Active"
+    };
+
+    setOffers(prev => [newOffer, ...prev]);
+
+    Swal.fire({
+      title: "Offer Launched!",
+      text: "The new promotional campaign is now active.",
+      icon: "success",
+      confirmButtonColor: "#197fe6",
+    }).then(() => {
+      navigate("/admin/promotions");
+    });
   };
 
   return (
@@ -145,13 +204,15 @@ const CreateOffer = () => {
                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                           Internal Campaign Name
                         </label>
-                        <input
+                         <input
                           name="internalName"
+                          value={formData.internalName}
                           onChange={handleInputChange}
-                          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none"
+                          className={`w-full bg-white dark:bg-slate-900 border ${errors.internalName ? 'border-rose-500' : 'border-slate-200 dark:border-slate-700'} rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none`}
                           placeholder="e.g., Summer 2024 Legal Aid Drive"
                           type="text"
                         />
+                        {errors.internalName && <p className="mt-1 text-xs text-rose-500 font-bold">{errors.internalName}</p>}
                         <p className="mt-1.5 text-xs text-slate-500">
                           Used for administrative tracking only.
                         </p>
@@ -165,9 +226,10 @@ const CreateOffer = () => {
                             name="displayTitle"
                             value={formData.displayTitle}
                             onChange={handleInputChange}
-                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none"
+                            className={`w-full bg-white dark:bg-slate-900 border ${errors.displayTitle ? 'border-rose-500' : 'border-slate-200 dark:border-slate-700'} rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none`}
                             type="text"
                           />
+                          {errors.displayTitle && <p className="mt-1 text-xs text-rose-500 font-bold">{errors.displayTitle}</p>}
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
@@ -177,9 +239,10 @@ const CreateOffer = () => {
                             name="description"
                             value={formData.description}
                             onChange={handleInputChange}
-                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none"
+                            className={`w-full bg-white dark:bg-slate-900 border ${errors.description ? 'border-rose-500' : 'border-slate-200 dark:border-slate-700'} rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none`}
                             type="text"
                           />
+                          {errors.description && <p className="mt-1 text-xs text-rose-500 font-bold">{errors.description}</p>}
                         </div>
                       </div>
                     </div>
@@ -252,13 +315,14 @@ const CreateOffer = () => {
                                 name="value"
                                 value={formData.value}
                                 onChange={handleInputChange}
-                                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg pl-4 pr-10 py-2.5 text-sm focus:ring-2 focus:ring-primary outline-none"
+                                className={`w-full bg-white dark:bg-slate-900 border ${errors.value ? 'border-rose-500' : 'border-slate-200 dark:border-slate-700'} rounded-lg pl-4 pr-10 py-2.5 text-sm focus:ring-2 focus:ring-primary outline-none`}
                                 type="number"
                               />
                               <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">
                                 {formData.discountType === "Percentage" ? "%" : "$"}
                               </span>
                             </div>
+                            {errors.value && <p className="mt-1 text-xs text-rose-500 font-bold">{errors.value}</p>}
                           </div>
                           <div>
                             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
@@ -289,7 +353,7 @@ const CreateOffer = () => {
                               name="promoCode"
                               value={formData.promoCode}
                               onChange={handleInputChange}
-                              className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2.5 text-sm font-mono tracking-wider focus:ring-2 focus:ring-primary outline-none"
+                              className={`flex-1 bg-white dark:bg-slate-900 border ${errors.promoCode ? 'border-rose-500' : 'border-slate-200 dark:border-slate-700'} rounded-lg px-4 py-2.5 text-sm font-mono tracking-wider focus:ring-2 focus:ring-primary outline-none uppercase`}
                               type="text"
                             />
                             <button
@@ -299,6 +363,7 @@ const CreateOffer = () => {
                               <MdRefresh className="text-xl" />
                             </button>
                           </div>
+                          {errors.promoCode && <p className="mt-1 text-xs text-rose-500 font-bold">{errors.promoCode}</p>}
                           <p className="mt-1.5 text-xs text-slate-500">
                             Customers will enter this code at checkout.
                           </p>
@@ -341,7 +406,7 @@ const CreateOffer = () => {
                 </button>
                 {step < 4 ? (
                   <button
-                    onClick={() => setStep((prev) => prev + 1)}
+                    onClick={handleNext}
                     className="flex items-center gap-2 px-10 py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/25 hover:bg-primary/90 transition-all hover:scale-[1.02] active:scale-95"
                   >
                     Next: {step === 1 ? "Logic" : step === 2 ? "Targeting" : "Duration"}

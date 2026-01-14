@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import Swal from "sweetalert2";
+
 import {
   MdHome,
   MdShield,
@@ -14,6 +16,7 @@ import {
   MdArrowForward,
   MdInfo,
   MdNotifications,
+  MdNotificationsActive,
   MdSettings,
 } from "react-icons/md";
 
@@ -62,7 +65,23 @@ const Settings = () => {
           <button className="px-4 py-2 bg-slate-200 dark:bg-surface-dark text-slate-900 dark:text-white text-sm font-bold rounded-lg hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors">
             Reset Defaults
           </button>
-          <button className="px-6 py-2 bg-primary text-white text-sm font-black rounded-lg hover:opacity-90 transition-opacity shadow-lg shadow-primary/20">
+          <button 
+            onClick={() => {
+              Swal.fire({
+                title: "Save Changes?",
+                text: "Platform-wide settings will be updated immediately.",
+                icon: "question",
+                showCancelButton: true,
+                confirmButtonColor: "#197fe6",
+                confirmButtonText: "Save Configuration",
+              }).then((result) => {
+                if (result.isConfirmed) {
+                  Swal.fire("Saved", "System configuration has been updated.", "success");
+                }
+              });
+            }}
+            className="px-6 py-2 bg-primary text-white text-sm font-black rounded-lg hover:opacity-90 transition-opacity shadow-lg shadow-primary/20"
+          >
             Save Configuration
           </button>
         </div>

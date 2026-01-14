@@ -1,4 +1,7 @@
 import React from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import Swal from "sweetalert2";
+
 import {
   MdChevronRight,
   MdGavel,
@@ -19,20 +22,68 @@ import {
   MdRefresh,
   MdInfo,
 } from "react-icons/md";
+import { useData } from "../../context/DataContext";
 
 const LawyerVerification = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { lawyers, updateLawyer } = useData();
+  
+  const lawyer = lawyers.find((l) => l.id === parseInt(id));
+
+  if (!lawyer) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[60vh] text-slate-500">
+        <MdInfo className="text-6xl mb-4 opacity-20" />
+        <h2 className="text-xl font-bold">Lawyer Not Found</h2>
+        <p>The lawyer application you are looking for does not exist.</p>
+        <Link to="/admin/lawyers/queue" className="mt-4 text-primary font-bold hover:underline">
+          Return to Queue
+        </Link>
+      </div>
+    );
+  }
+
+  const handleAction = (status) => {
+    const actionText = status === "Approved" ? "Approve" : "Reject";
+    const icon = status === "Approved" ? "success" : "error";
+
+    Swal.fire({
+      title: `${actionText} Lawyer?`,
+      text: `Are you sure you want to ${actionText.toLowerCase()} ${lawyer.name}'s application?`,
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonColor: status === "Approved" ? "#22c55e" : "#ef4444",
+      cancelButtonColor: "#94a3b8",
+      confirmButtonText: `Yes, ${actionText}`,
+    }).then((result) => {
+      if (result.isConfirmed) {
+        updateLawyer(lawyer.id, { status });
+        Swal.fire({
+          title: "Success!",
+          text: `Lawyer has been ${status.toLowerCase()}.`,
+          icon: icon,
+          timer: 1500,
+          showConfirmButton: false,
+        }).then(() => {
+          navigate("/admin/lawyers/queue");
+        });
+      }
+    });
+  };
+
   return (
-    <div className="relative pb-24">
+    <div className="relative pb-24 animate-in fade-in duration-500">
       {/* Breadcrumbs */}
       <div className="mb-6">
         <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-          <a className="hover:text-primary transition-colors" href="#">
+          <Link className="hover:text-primary transition-colors" to="/admin/lawyers">
             Lawyers
-          </a>
+          </Link>
           <MdChevronRight className="text-xs" />
-          <a className="hover:text-primary transition-colors" href="#">
+          <Link className="hover:text-primary transition-colors" to="/admin/lawyers/queue">
             Verification Queue
-          </a>
+          </Link>
           <MdChevronRight className="text-xs" />
           <span className="text-slate-900 dark:text-white font-medium">
             Verification Details
@@ -49,18 +100,21 @@ const LawyerVerification = () => {
               <div
                 className="size-32 rounded-full border-4 border-primary/10 mb-4 bg-cover bg-center shadow-lg"
                 style={{
-                  backgroundImage:
-                    "url('https://lh3.googleusercontent.com/aida-public/AB6AXuB55BQ5c2_TT2WfxYQhYTx6BoG_WPceo8fL3iMDeryOb0d48APANCKp1of6zl-jsBuNzyUbrzClP3nb8xkc3CuKHyJurvzHbMo3MBvYgTC5Oj8Yv5X0FAXTfK_3Rku1NJMvYhwDr1fNP945IwWwep3hRSH_ZPPInST1c1YmkgVYB8grx-KYS04nD2wD_NWAhgfolSIkfb-UlrJiMZjIimYT_s8TZ20yVCCCAmi_Zl3dlZ31BXAaaSfjXeQFXiX99zuLqMl_CAEFF-HB')",
+                  backgroundImage: `url('${lawyer.image}')`,
                 }}
               ></div>
               <h1 className="text-xl font-bold text-slate-900 dark:text-white">
-                Jonathan H. Sterling, Esq.
+                {lawyer.name}
               </h1>
               <p className="text-primary font-medium text-sm mt-1">
-                Corporate Law Specialist
+                {lawyer.specialization}
               </p>
-              <div className="mt-4 px-3 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-full text-[10px] font-bold uppercase tracking-wider">
-                Pending Verification
+              <div className={`mt-4 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                lawyer.status === "Approved" ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400" :
+                lawyer.status === "Pending Review" ? "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400" :
+                "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"
+              }`}>
+                {lawyer.status}
               </div>
             </div>
             <div className="space-y-4 border-t border-slate-100 dark:border-border-dark pt-6">
@@ -340,13 +394,22 @@ const LawyerVerification = () => {
             ></textarea>
           </div>
           <div className="flex items-center gap-3 w-full md:w-auto">
-            <button className="flex-1 md:flex-none min-w-[140px] px-6 py-2.5 rounded-lg border border-slate-200 dark:border-border-dark text-sm font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-slate-600 dark:text-slate-300">
+            <button 
+              onClick={() => handleAction("Pending Review")}
+              className="flex-1 md:flex-none min-w-[140px] px-6 py-2.5 rounded-lg border border-slate-200 dark:border-border-dark text-sm font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-slate-600 dark:text-slate-300"
+            >
               Request Revision
             </button>
-            <button className="flex-1 md:flex-none min-w-[120px] px-6 py-2.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-bold shadow-lg shadow-red-600/20 transition-all">
+            <button 
+              onClick={() => handleAction("Rejected")}
+              className="flex-1 md:flex-none min-w-[120px] px-6 py-2.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-bold shadow-lg shadow-red-600/20 transition-all"
+            >
               Reject
             </button>
-            <button className="flex-1 md:flex-none min-w-[160px] px-8 py-2.5 rounded-lg bg-primary hover:bg-primary/90 text-white text-sm font-bold shadow-lg shadow-primary/20 transition-all">
+            <button 
+              onClick={() => handleAction("Approved")}
+              className="flex-1 md:flex-none min-w-[160px] px-8 py-2.5 rounded-lg bg-primary hover:bg-primary/90 text-white text-sm font-bold shadow-lg shadow-primary/20 transition-all"
+            >
               Approve Lawyer
             </button>
           </div>

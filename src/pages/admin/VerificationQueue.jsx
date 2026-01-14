@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import Swal from "sweetalert2";
+
 import { Link } from "react-router-dom";
 import {
   MdSearch,
@@ -8,20 +10,43 @@ import {
   MdVisibility,
   MdHistory,
   MdVerifiedUser,
+  MdChevronLeft,
+  MdChevronRight,
+  MdSearchOff,
 } from "react-icons/md";
-import { initialLawyers } from "../../data/mockData";
+import { useData } from "../../context/DataContext";
 
 const VerificationQueue = () => {
-  const [lawyers, setLawyers] = useState(initialLawyers.filter(l => l.status === "Pending Review" || l.status === "Approved" || l.status === "Rejected"));
+  const { lawyers, updateLawyer } = useData();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("Pending Review");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   const handleUpdateStatus = (id, newStatus) => {
-    setLawyers((prev) =>
-      prev.map((lawyer) =>
-        lawyer.id === id ? { ...lawyer, status: newStatus } : lawyer
-      )
-    );
+    const actionText = newStatus === "Approved" ? "Approve" : newStatus === "Rejected" ? "Reject" : "Reset";
+    const icon = newStatus === "Approved" ? "success" : newStatus === "Rejected" ? "error" : "info";
+
+    Swal.fire({
+      title: `${actionText} Lawyer?`,
+      text: `Are you sure you want to ${actionText.toLowerCase()} this lawyer's application?`,
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonColor: newStatus === "Approved" ? "#22c55e" : newStatus === "Rejected" ? "#ef4444" : "#64748b",
+      cancelButtonColor: "#94a3b8",
+      confirmButtonText: `Yes, ${actionText}`,
+    }).then((result) => {
+      if (result.isConfirmed) {
+        updateLawyer(id, { status: newStatus });
+        Swal.fire({
+          title: "Update Complete",
+          text: `Application has been ${newStatus.toLowerCase()}.`,
+          icon: icon,
+          timer: 1500,
+          showConfirmButton: false,
+        });
+      }
+    });
   };
 
   const filteredLawyers = lawyers.filter((lawyer) => {
@@ -31,6 +56,12 @@ const VerificationQueue = () => {
     const matchesStatus = statusFilter === "All" || lawyer.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  const totalPages = Math.ceil(filteredLawyers.length / rowsPerPage);
+  const paginatedLawyers = filteredLawyers.slice(
+    (currentPage - 1) * rowsPerPage,
+    currentPage * rowsPerPage
+  );
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -43,8 +74,8 @@ const VerificationQueue = () => {
           <h2 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">
             Verification Queue
           </h2>
-          <p className="text-slate-500 dark:text-slate-400 mt-1">
-            Reviewing professional credentials of <span className="text-primary font-bold">{lawyers.filter(l => l.status === "Pending Review").length}</span> lawyers awaiting approval.
+          <p className="text-slate-500 dark:text-[#9f9db9] mt-1">
+            Reviewing professional credentials of <span className="text-primary font-black">{lawyers.filter(l => l.status === "Pending Review").length}</span> lawyers awaiting approval.
           </p>
         </div>
         <div className="flex gap-4">
@@ -65,15 +96,21 @@ const VerificationQueue = () => {
             <input
               type="text"
               placeholder="Search by name or email..."
-              className="w-full bg-slate-50 dark:bg-background-dark border-none rounded-lg pl-10 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/30 outline-none text-slate-900 dark:text-white"
+              className="w-full bg-slate-50 dark:bg-[#1c1c27] border border-slate-200 dark:border-[#3d3b54] rounded-lg pl-10 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/30 outline-none text-slate-900 dark:text-white"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1);
+              }}
             />
           </div>
           <select
-            className="bg-slate-50 dark:bg-background-dark border-none rounded-lg px-4 py-2.5 text-sm font-bold text-slate-600 dark:text-slate-300 outline-none focus:ring-2 focus:ring-primary/30"
+            className="bg-slate-50 dark:bg-[#1c1c27] border border-slate-200 dark:border-[#3d3b54] rounded-lg px-4 py-2.5 text-sm font-bold text-slate-600 dark:text-[#9f9db9] outline-none focus:ring-2 focus:ring-primary/30"
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setCurrentPage(1);
+            }}
           >
             <option value="All">All Applications</option>
             <option value="Pending Review">Pending Review</option>
@@ -88,54 +125,54 @@ const VerificationQueue = () => {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-slate-50 dark:bg-background-dark/50 border-b border-slate-200 dark:border-border-dark">
-                <th className="px-6 py-4 text-xs font-black uppercase tracking-wider text-slate-400">
+              <tr className="bg-slate-50 dark:bg-[#252533] border-b border-slate-200 dark:border-[#3d3b54]">
+                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.15em] text-slate-500 dark:text-[#9f9db9]">
                   Lawyer Details
                 </th>
-                <th className="px-6 py-4 text-xs font-black uppercase tracking-wider text-slate-400">
+                <th className="hidden sm:table-cell px-6 py-4 text-[10px] font-black uppercase tracking-[0.15em] text-slate-500 dark:text-[#9f9db9]">
                   Specialization
                 </th>
-                <th className="px-6 py-4 text-xs font-black uppercase tracking-wider text-slate-400">
+                <th className="hidden lg:table-cell px-6 py-4 text-[10px] font-black uppercase tracking-[0.15em] text-slate-500 dark:text-[#9f9db9]">
                   Applied Date
                 </th>
-                <th className="px-6 py-4 text-xs font-black uppercase tracking-wider text-slate-400">
+                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.15em] text-slate-500 dark:text-[#9f9db9]">
                   Status
                 </th>
-                <th className="px-6 py-4 text-xs font-black uppercase tracking-wider text-slate-400 text-right">
+                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.15em] text-slate-500 dark:text-[#9f9db9] text-right">
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-border-dark">
-              {filteredLawyers.length > 0 ? (
-                filteredLawyers.map((lawyer) => (
+            <tbody className="divide-y divide-slate-100 dark:divide-[#3d3b54]">
+              {paginatedLawyers.length > 0 ? (
+                paginatedLawyers.map((lawyer) => (
                   <tr
                     key={lawyer.id}
-                    className="hover:bg-slate-50 dark:hover:bg-background-dark/30 transition-colors group"
+                    className="hover:bg-slate-50 dark:hover:bg-[#252533] transition-colors group"
                   >
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4 focus-within:ring-2 focus-within:ring-primary/20">
                       <div className="flex items-center gap-3">
                         <img
                           src={lawyer.image}
                           alt=""
-                          className="size-10 rounded-full ring-2 ring-slate-100 dark:ring-border-dark"
+                          className="size-10 rounded-full ring-2 ring-slate-100 dark:ring-[#3d3b54] object-cover"
                         />
                         <div>
-                          <p className="text-sm font-bold text-slate-900 dark:text-white">
+                          <p className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">
                             {lawyer.name}
                           </p>
-                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">
+                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
                             ID: LAW-{lawyer.id}249
                           </p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <span className="text-sm font-medium text-slate-600 dark:text-slate-300">
+                    <td className="hidden sm:table-cell px-6 py-4">
+                      <span className="text-xs font-black text-primary uppercase tracking-widest">
                         {lawyer.specialization}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm font-bold text-slate-500 dark:text-slate-400">
+                    <td className="hidden lg:table-cell px-6 py-4 text-[10px] font-black text-slate-500 dark:text-[#9f9db9] uppercase tracking-widest">
                       Oct 12, 2023
                     </td>
                     <td className="px-6 py-4">
@@ -152,10 +189,10 @@ const VerificationQueue = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center justify-end gap-2 sm:opacity-0 group-hover:opacity-100 transition-all duration-300">
                         <Link
-                          to="/admin/lawyers/verify"
-                          className="p-2 bg-slate-100 dark:bg-background-dark rounded-lg text-slate-500 hover:text-primary transition-colors"
+                          to={`/admin/lawyers/verify/${lawyer.id}`}
+                          className="p-2 bg-slate-100 dark:bg-[#2a2839] rounded-lg text-slate-500 dark:text-[#9f9db9] hover:text-primary transition-colors"
                           title="View Application"
                         >
                           <MdVisibility className="text-xl" />
@@ -181,7 +218,7 @@ const VerificationQueue = () => {
                         {lawyer.status !== "Pending Review" && (
                           <button
                             onClick={() => handleUpdateStatus(lawyer.id, "Pending Review")}
-                            className="p-2 bg-slate-100 dark:bg-background-dark rounded-lg text-slate-500 hover:text-primary transition-colors"
+                            className="p-2 bg-slate-100 dark:bg-[#2a2839] rounded-lg text-slate-500 dark:text-[#9f9db9] hover:text-primary transition-colors"
                             title="Reset to Pending"
                           >
                             <MdHistory className="text-xl" />
@@ -193,13 +230,56 @@ const VerificationQueue = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="5" className="px-6 py-10 text-center text-slate-500 dark:text-slate-400">
-                    No applications found matching your search.
+                  <td colSpan="5" className="py-20 text-center">
+                    <div className="flex flex-col items-center justify-center opacity-40">
+                      <MdSearchOff className="text-6xl text-slate-300 dark:text-[#3d3b54] mb-4" />
+                      <p className="text-sm font-black uppercase tracking-[0.2em] text-slate-500">Queue is empty</p>
+                    </div>
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Pagination Controls */}
+        <div className="p-4 bg-slate-50 dark:bg-[#252533] border-t border-slate-200 dark:border-[#3d3b54] flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-black uppercase text-slate-500 dark:text-[#9f9db9] tracking-widest">Rows:</span>
+            <select 
+              value={rowsPerPage}
+              onChange={(e) => {
+                setRowsPerPage(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+              className="bg-white dark:bg-[#1c1c27] border border-slate-200 dark:border-[#3d3b54] rounded-lg text-xs font-bold px-2 py-1 outline-none focus:ring-2 focus:ring-primary/20 transition-all text-slate-900 dark:text-white"
+            >
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={50}>50</option>
+            </select>
+          </div>
+          <div className="flex items-center gap-4">
+            <span className="text-xs font-bold text-slate-500 dark:text-[#9f9db9]">
+              Page {currentPage} of {totalPages || 1}
+            </span>
+            <div className="flex gap-1">
+              <button 
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                className="p-1 hover:bg-slate-200 dark:hover:bg-[#3d3b54] rounded-md transition-colors disabled:opacity-30 text-slate-400" 
+                disabled={currentPage === 1}
+              >
+                <MdChevronLeft className="text-2xl" />
+              </button>
+              <button 
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                className="p-1 hover:bg-slate-200 dark:hover:bg-[#3d3b54] rounded-md transition-colors disabled:opacity-30 text-slate-600 dark:text-slate-300"
+                disabled={currentPage === totalPages || totalPages === 0}
+              >
+                <MdChevronRight className="text-2xl" />
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

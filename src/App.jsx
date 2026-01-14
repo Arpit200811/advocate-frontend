@@ -1,4 +1,8 @@
+import { useEffect } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import AOS from "aos";
+import "aos/dist/aos.css";
+
 import Login from "./pages/auth/Login";
 import TwoFactorAuth from "./pages/auth/TwoFactorAuth";
 import Dashboard from "./pages/admin/Dashboard";
@@ -16,10 +20,22 @@ import Notifications from "./pages/admin/Notifications";
 import NotificationSettings from "./pages/admin/NotificationSettings";
 import Promotions from "./pages/admin/Promotions";
 import CreateOffer from "./pages/admin/CreateOffer";
+import Referrals from "./pages/admin/Referrals";
+import Categories from "./pages/admin/Categories";
+import Reviews from "./pages/admin/Reviews";
+import BulkPayout from "./pages/admin/BulkPayout";
 import AdminLayout from "./layouts/AdminLayout";
 import NotFound from "./pages/error/NotFound";
 
 function App() {
+  useEffect(() => {
+    AOS.init({
+      duration: 1000,
+      once: true,
+      easing: "ease-in-out",
+    });
+  }, []);
+
   return (
     <BrowserRouter>
       <Routes>
@@ -30,7 +46,7 @@ function App() {
           <Route path="users" element={<Users />} />
           <Route path="lawyers" element={<Lawyers />} />
           <Route path="lawyers/queue" element={<VerificationQueue />} />
-          <Route path="lawyers/verify" element={<LawyerVerification />} />
+          <Route path="lawyers/verify/:id" element={<LawyerVerification />} />
           <Route path="settings" element={<Settings />} />
           <Route path="settings/notifications" element={<NotificationSettings />} />
           <Route path="consultations" element={<Consultations />} />
@@ -41,6 +57,10 @@ function App() {
           <Route path="notifications" element={<Notifications />} />
           <Route path="promotions" element={<Promotions />} />
           <Route path="promotions/create" element={<CreateOffer />} />
+          <Route path="referrals" element={<Referrals />} />
+          <Route path="categories" element={<Categories />} />
+          <Route path="reviews" element={<Reviews />} />
+          <Route path="payouts/bulk" element={<BulkPayout />} />
         </Route>
         <Route path="*" element={<NotFound />} />
       </Routes>

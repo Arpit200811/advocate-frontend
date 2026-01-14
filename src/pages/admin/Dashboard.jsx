@@ -1,4 +1,7 @@
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
+import Swal from "sweetalert2";
+
 import {
   MdPayments,
   MdPerson,
@@ -7,14 +10,14 @@ import {
   MdLocationOn,
   MdMoreVert,
 } from "react-icons/md";
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  Tooltip,
-  ResponsiveContainer,
+import { 
+  AreaChart, 
+  Area, 
+  XAxis, 
+  Tooltip, 
+  ResponsiveContainer 
 } from "recharts";
-import { initialLawyers, initialUsers, initialConsultations } from "../../data/mockData";
+import { useData } from "../../context/DataContext";
 
 const monthlyData = [
   { name: "Jan", pv: 2400 },
@@ -36,19 +39,26 @@ const weeklyData = [
 ];
 
 const Dashboard = () => {
+  const { lawyers, users, consultations } = useData();
   const [timeRange, setTimeRange] = useState("monthly");
 
   const data = timeRange === "monthly" ? monthlyData : weeklyData;
 
-  const totalUsers = initialUsers.length;
-  const activeLawyers = initialLawyers.filter(l => l.status === 'Approved').length;
-  const pendingVerifications = initialLawyers.filter(l => l.status === 'Pending Review').length;
+  const totalUsers = users.length;
+  const activeLawyers = lawyers.filter(l => l.status === 'Approved').length;
+  const pendingVerifications = lawyers.filter(l => l.status === 'Pending Review').length;
+  const totalConsultations = consultations.length;
+  const totalRevenue = consultations.reduce((acc, curr) => {
+    // Basic parser for '$150' format
+    const amount = parseFloat(curr.amount.replace('$', '').replace(',', '')) || 0;
+    return acc + amount;
+  }, 0);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       {/* KPI Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white dark:bg-surface-dark p-6 rounded-xl border border-slate-200 dark:border-border-dark shadow-sm">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div data-aos="fade-up" data-aos-delay="0" className="bg-white dark:bg-[#1c1c27] p-6 rounded-xl border border-slate-200 dark:border-[#3d3b54] shadow-sm">
           <div className="flex justify-between items-start mb-4">
             <div className="p-2 bg-primary/10 rounded-lg text-primary">
               <MdPayments className="text-2xl" />
@@ -57,12 +67,14 @@ const Dashboard = () => {
               +12.5%
             </span>
           </div>
-          <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">
+          <p className="text-slate-500 dark:text-[#9f9db9] text-sm font-medium">
             Total Revenue
           </p>
-          <h3 className="text-2xl font-black text-slate-900 dark:text-white mt-1 font-black">$124,500</h3>
+          <h3 className="text-2xl font-black text-slate-900 dark:text-white mt-1">
+            ${totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+          </h3>
         </div>
-        <div className="bg-white dark:bg-surface-dark p-6 rounded-xl border border-slate-200 dark:border-border-dark shadow-sm">
+        <div data-aos="fade-up" data-aos-delay="100" className="bg-white dark:bg-[#1c1c27] p-6 rounded-xl border border-slate-200 dark:border-[#3d3b54] shadow-sm">
           <div className="flex justify-between items-start mb-4">
             <div className="p-2 bg-primary/10 rounded-lg text-primary">
               <MdPerson className="text-2xl" />
@@ -71,12 +83,12 @@ const Dashboard = () => {
               +5.2%
             </span>
           </div>
-          <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">
+          <p className="text-slate-500 dark:text-[#9f9db9] text-sm font-medium">
             Active Lawyers
           </p>
-          <h3 className="text-2xl font-black text-slate-900 dark:text-white mt-1 font-black">{activeLawyers}</h3>
+          <h3 className="text-2xl font-black text-slate-900 dark:text-white mt-1">{activeLawyers}</h3>
         </div>
-        <div className="bg-white dark:bg-surface-dark p-6 rounded-xl border border-slate-200 dark:border-border-dark shadow-sm">
+        <div data-aos="fade-up" data-aos-delay="200" className="bg-white dark:bg-[#1c1c27] p-6 rounded-xl border border-slate-200 dark:border-[#3d3b54] shadow-sm">
           <div className="flex justify-between items-start mb-4">
             <div className="p-2 bg-orange-500/10 rounded-lg text-orange-500">
               <MdVerifiedUser className="text-2xl" />
@@ -85,12 +97,12 @@ const Dashboard = () => {
               Action
             </span>
           </div>
-          <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">
+          <p className="text-slate-500 dark:text-[#9f9db9] text-sm font-medium">
             Pending Verifications
           </p>
-          <h3 className="text-2xl font-black text-slate-900 dark:text-white mt-1 font-black">{pendingVerifications}</h3>
+          <h3 className="text-2xl font-black text-slate-900 dark:text-white mt-1">{pendingVerifications}</h3>
         </div>
-        <div className="bg-white dark:bg-surface-dark p-6 rounded-xl border border-slate-200 dark:border-border-dark shadow-sm">
+        <div data-aos="fade-up" data-aos-delay="300" className="bg-white dark:bg-[#1c1c27] p-6 rounded-xl border border-slate-200 dark:border-[#3d3b54] shadow-sm">
           <div className="flex justify-between items-start mb-4">
             <div className="p-2 bg-primary/10 rounded-lg text-primary">
               <MdEventAvailable className="text-2xl" />
@@ -99,31 +111,31 @@ const Dashboard = () => {
               Today
             </span>
           </div>
-          <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">
+          <p className="text-slate-500 dark:text-[#9f9db9] text-sm font-medium">
             Total Consultations
           </p>
-          <h3 className="text-2xl font-black text-slate-900 dark:text-white mt-1 font-black">128</h3>
+          <h3 className="text-2xl font-black text-slate-900 dark:text-white mt-1">{totalConsultations}</h3>
         </div>
       </div>
 
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main Chart */}
-        <div className="lg:col-span-2 bg-white dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-border-dark p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-8">
+        <div className="lg:col-span-2 bg-white dark:bg-[#1c1c27] rounded-xl border border-slate-200 dark:border-[#3d3b54] p-6 shadow-sm">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
             <div>
               <h2 className="text-lg font-bold text-slate-900 dark:text-white">Revenue Overview</h2>
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-slate-500 dark:text-[#9f9db9]">
                 Financial performance for the selected period
               </p>
             </div>
-            <div className="flex bg-slate-100 dark:bg-background-dark rounded-lg p-1">
+            <div className="flex bg-slate-100 dark:bg-[#2a2839] rounded-lg p-1">
               <button
                 onClick={() => setTimeRange("monthly")}
                 className={`px-3 py-1 text-xs font-bold rounded-md shadow-sm transition-all ${
                   timeRange === "monthly"
-                    ? "bg-white dark:bg-surface-dark text-slate-900 dark:text-white"
-                    : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                    ? "bg-white dark:bg-[#1c1c27] text-slate-900 dark:text-white"
+                    : "text-slate-500 hover:text-slate-700 dark:hover:text-[#9f9db9]"
                 }`}
               >
                 Monthly
@@ -132,8 +144,8 @@ const Dashboard = () => {
                 onClick={() => setTimeRange("weekly")}
                 className={`px-3 py-1 text-xs font-bold rounded-md shadow-sm transition-all ${
                   timeRange === "weekly"
-                    ? "bg-white dark:bg-surface-dark text-slate-900 dark:text-white"
-                    : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                    ? "bg-white dark:bg-[#1c1c27] text-slate-900 dark:text-white"
+                    : "text-slate-500 hover:text-slate-700 dark:hover:text-[#9f9db9]"
                 }`}
               >
                 Weekly
@@ -185,66 +197,79 @@ const Dashboard = () => {
         </div>
 
         {/* Side Stats */}
-        <div className="bg-white dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-border-dark p-6 shadow-sm">
+        <div className="bg-white dark:bg-[#1c1c27] rounded-xl border border-slate-200 dark:border-[#3d3b54] p-6 shadow-sm">
           <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-6">Service Distribution</h2>
           <div className="space-y-6">
             {[
               { label: 'Corporate Law', value: '45%', color: 'bg-primary' },
-              { label: 'Family Law', value: '30%', color: 'bg-blue-400' },
-              { label: 'Criminal Defense', value: '15%', color: 'bg-indigo-400' },
+              { label: 'Family Law', value: '30%', color: 'bg-indigo-400' },
+              { label: 'Criminal Defense', value: '15%', color: 'bg-rose-400' },
               { label: 'Intellectual Property', value: '10%', color: 'bg-slate-400' },
             ].map((service, i) => (
               <div key={i}>
                 <div className="flex justify-between text-sm mb-2 font-bold">
                   <span className="text-slate-700 dark:text-slate-300">{service.label}</span>
-                  <span className="text-slate-500">{service.value}</span>
+                  <span className="text-slate-500 dark:text-[#9f9db9]">{service.value}</span>
                 </div>
-                <div className="w-full h-2 bg-slate-100 dark:bg-background-dark rounded-full overflow-hidden">
-                  <div className={`${service.color} h-full w-[${service.value}]`}></div>
+                <div className="w-full h-2 bg-slate-100 dark:bg-[#252533] rounded-full overflow-hidden">
+                  <div className={`${service.color} h-full`} style={{ width: service.value }}></div>
                 </div>
               </div>
             ))}
           </div>
-          <div className="mt-8 p-4 bg-slate-50 dark:bg-background-dark rounded-lg">
-            <p className="text-xs text-slate-500 mb-2 font-bold uppercase tracking-widest">
+          <div className="mt-8 p-4 bg-slate-50 dark:bg-[#252533] rounded-lg">
+            <p className="text-xs text-slate-500 dark:text-[#9f9db9] mb-2 font-bold uppercase tracking-widest">
               Top Performing Region
             </p>
             <div className="flex items-center gap-3">
               <MdLocationOn className="text-primary text-xl" />
-              <span className="font-black text-sm text-slate-900 dark:text-white">New York, USA</span>
+              <span className="font-black text-sm text-slate-900 dark:text-white uppercase tracking-tight">New York, USA</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* Recent Activity Table Section */}
-      <div className="bg-white dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-border-dark shadow-sm overflow-hidden">
-        <div className="p-6 border-b border-slate-200 dark:border-border-dark flex items-center justify-between">
+      <div className="bg-white dark:bg-[#1c1c27] rounded-xl border border-slate-200 dark:border-[#3d3b54] shadow-sm overflow-hidden">
+        <div className="p-6 border-b border-slate-200 dark:border-[#3d3b54] flex flex-col sm:flex-row items-center justify-between gap-4">
           <div>
             <h2 className="text-lg font-bold text-slate-900 dark:text-white">Recent Consultations</h2>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-slate-500 dark:text-[#9f9db9]">
               Latest legal sessions across the platform
             </p>
           </div>
-          <button className="text-primary text-sm font-black uppercase hover:underline">
-            View All
-          </button>
+          <div className="flex gap-4">
+            <button 
+              onClick={() => Swal.fire({
+                title: 'SweetAlert2 Works!',
+                text: 'AOS and SweetAlert2 are now integrated globally.',
+                icon: 'success',
+                confirmButtonColor: '#197fe6'
+              })}
+              className="text-xs font-black uppercase bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors"
+            >
+              Test Alert
+            </button>
+            <Link to="/admin/consultations" className="text-primary text-sm font-black uppercase hover:underline">
+              View All
+            </Link>
+          </div>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead className="bg-slate-50 dark:bg-background-dark/50 text-slate-400 text-[10px] font-black uppercase tracking-[0.15em]">
+          <table className="w-full text-left border-collapse">
+            <thead className="bg-slate-50 dark:bg-[#252533] text-slate-500 dark:text-[#9f9db9] text-[10px] font-black uppercase tracking-[0.15em]">
               <tr>
                 <th className="px-6 py-4">Date & Time</th>
                 <th className="px-6 py-4">Client Name</th>
-                <th className="px-6 py-4">Assigned Lawyer</th>
-                <th className="px-6 py-4">Service Type</th>
+                <th className="hidden lg:table-cell px-6 py-4">Assigned Lawyer</th>
+                <th className="hidden sm:table-cell px-6 py-4">Service Type</th>
                 <th className="px-6 py-4">Amount</th>
                 <th className="px-6 py-4">Status</th>
                 <th className="px-6 py-4 text-right">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-border-dark">
-              {initialConsultations.map((session, i) => (
+            <tbody className="divide-y divide-slate-100 dark:divide-[#3d3b54]">
+              {consultations.map((session, i) => (
                 <tr key={i} className="hover:bg-slate-50 dark:hover:bg-background-dark/30 transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <p className="text-sm font-bold text-slate-900 dark:text-white">{session.date}</p>
@@ -253,10 +278,10 @@ const Dashboard = () => {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{session.client}</span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="text-sm font-medium text-slate-500 dark:text-slate-400">{session.lawyer}</span>
+                  <td className="hidden lg:table-cell px-6 py-4 whitespace-nowrap">
+                    <span className="text-sm font-medium text-slate-500 dark:text-[#9f9db9]">{session.lawyer}</span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-slate-900 dark:text-white">
+                  <td className="hidden sm:table-cell px-6 py-4 whitespace-nowrap text-sm font-bold text-slate-900 dark:text-white">
                      Corporate
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-black text-slate-900 dark:text-white">

@@ -1,5 +1,6 @@
 import React from "react";
-import { Link, Outlet, useLocation } from "react-router-dom";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import Swal from "sweetalert2";
 import {
   MdDashboard,
   MdWork,
@@ -18,16 +19,44 @@ import {
   MdWarning,
   MdAnalytics,
   MdStars,
+  MdRedeem,
   MdAccountBalanceWallet,
+  MdCategory,
 } from "react-icons/md";
 
 const AdminLayout = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleLogout = (e) => {
+    e.preventDefault();
+    Swal.fire({
+      title: "Logout?",
+      text: "Are you sure you want to exit the management portal?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#64748b",
+      confirmButtonText: "Yes, Logout",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        // Mock logout
+        navigate("/");
+        Swal.fire({
+          title: "Logged Out",
+          text: "You have been securely logged out.",
+          icon: "success",
+          timer: 1500,
+          showConfirmButton: false,
+        });
+      }
+    });
+  };
 
   const isActive = (path) => {
-    return location.pathname === path
-      ? "bg-primary text-white"
-      : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-surface-dark";
+    return location.pathname.startsWith(path)
+      ? "bg-primary text-white shadow-lg shadow-primary/20 scale-[1.02]"
+      : "text-slate-600 dark:text-[#9f9db9] hover:bg-slate-100 dark:hover:bg-[#2a2839] hover:text-primary dark:hover:text-white";
   };
 
   return (
@@ -133,6 +162,15 @@ const AdminLayout = () => {
             </Link>
             <Link
               className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${isActive(
+                "/admin/reviews"
+              )}`}
+              to="/admin/reviews"
+            >
+              <MdChatBubble className="text-xl" />
+              <span className="text-sm font-medium">Reviews</span>
+            </Link>
+            <Link
+              className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${isActive(
                 "/admin/users"
               )}`}
               to="/admin/users"
@@ -142,12 +180,30 @@ const AdminLayout = () => {
             </Link>
             <Link
               className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${isActive(
+                "/admin/categories"
+              )}`}
+              to="/admin/categories"
+            >
+              <MdCategory className="text-xl" />
+              <span className="text-sm font-medium">Categories</span>
+            </Link>
+            <Link
+              className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${isActive(
                 "/admin/promotions"
               )}`}
               to="/admin/promotions"
             >
               <MdStars className="text-xl" />
               <span className="text-sm font-medium">Promotions</span>
+            </Link>
+            <Link
+              className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${isActive(
+                "/admin/referrals"
+              )}`}
+              to="/admin/referrals"
+            >
+              <MdRedeem className="text-xl" />
+              <span className="text-sm font-medium">Referrals</span>
             </Link>
           </nav>
           {/* Footer Nav */}
@@ -172,6 +228,7 @@ const AdminLayout = () => {
             </Link>
             <Link
               className="flex items-center gap-3 px-3 py-2 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors"
+              onClick={handleLogout}
               to="#"
             >
               <MdLogout className="text-xl" />
@@ -226,7 +283,7 @@ const AdminLayout = () => {
         </header>
 
         {/* Scrollable Content Area */}
-        <main className="flex-1 overflow-y-auto p-8 space-y-8">
+        <main className="flex-1 overflow-y-auto p-4 md:p-8 space-y-8 custom-scrollbar">
           <Outlet />
         </main>
       </div>

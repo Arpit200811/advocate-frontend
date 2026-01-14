@@ -19,7 +19,7 @@ import {
   BarChart,
   Bar,
 } from "recharts";
-import { initialLawyers } from "../../data/mockData";
+import { useData } from "../../context/DataContext";
 
 const analyticsData30d = [
   { name: "Oct 01", revenue: 4000 },
@@ -49,7 +49,7 @@ const volumeData = [
 
 const Analytics = () => {
   const [range, setRange] = useState("30d");
-  const [lawyers, setLawyers] = useState(initialLawyers);
+  const { lawyers } = useData();
 
   const data = range === "30d" ? analyticsData30d : analyticsDataYTD;
 
@@ -84,7 +84,7 @@ const Analytics = () => {
               YTD
             </button>
             <div className="h-6 w-px bg-slate-200 dark:bg-border-dark mx-1"></div>
-            <button className="flex items-center gap-2 bg-slate-900 dark:bg-background-dark text-white px-4 py-2 rounded-lg text-sm font-bold transition-all hover:bg-slate-800 border border-transparent hover:border-slate-700 font-bold">
+            <button className="flex items-center gap-2 bg-slate-900 dark:bg-background-dark text-white px-4 py-2 rounded-lg text-sm font-bold transition-all hover:bg-slate-800 border border-transparent hover:border-slate-700">
               <MdDownload className="text-lg" />
               <span>Export</span>
             </button>

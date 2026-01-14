@@ -12,10 +12,11 @@ import {
   MdExpandMore,
   MdDoneAll,
 } from "react-icons/md";
-import { initialNotifications } from "../../data/mockData";
+import { useData } from "../../context/DataContext";
+import Swal from "sweetalert2";
 
 const Notifications = () => {
-  const [notifications, setNotifications] = useState(initialNotifications);
+  const { notifications, setNotifications, markNotificationRead } = useData();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("All");
 
@@ -30,9 +31,7 @@ const Notifications = () => {
   });
 
   const toggleRead = (id) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, isRead: !n.isRead } : n))
-    );
+    markNotificationRead(id);
   };
 
   const toggleFlag = (id) => {
@@ -42,7 +41,18 @@ const Notifications = () => {
   };
 
   const markAllAsRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    Swal.fire({
+      title: "Mark all as read?",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonColor: "#197fe6",
+      confirmButtonText: "Yes, Mark All",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+        Swal.fire("Success", "All notifications marked as read.", "success");
+      }
+    });
   };
 
   const getIcon = (type) => {
