@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import Swal from "sweetalert2";
 import {
   MdSearch,
   MdSend,
@@ -95,7 +96,13 @@ const NotificationSettings = () => {
     setTriggers((prev) =>
       prev.map((t) => (t.id === editingTemplate.id ? editingTemplate : t))
     );
-    alert("Changes saved successfully!");
+    Swal.fire({
+      title: "Success",
+      text: "Notification templates have been updated.",
+      icon: "success",
+      timer: 2000,
+      showConfirmButton: false
+    });
   };
 
   return (

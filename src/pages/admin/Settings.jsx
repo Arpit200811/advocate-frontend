@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 
 import {
@@ -21,6 +22,7 @@ import {
 } from "react-icons/md";
 
 const Settings = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("security");
   const [settings, setSettings] = useState({
     is2FAEnforced: true,
@@ -258,7 +260,7 @@ const Settings = () => {
           {/* Quick Access to Notifications */}
           <div 
             className="bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark rounded-2xl p-6 shadow-sm flex items-center justify-between group cursor-pointer hover:border-primary transition-all mt-6"
-            onClick={() => window.location.href = '/admin/settings/notifications'}
+            onClick={() => navigate('/admin/settings/notifications')}
           >
             <div className="flex items-center gap-4">
               <div className="p-3 bg-primary/10 rounded-xl text-primary">

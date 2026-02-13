@@ -166,7 +166,7 @@ const Analytics = () => {
               </p>
             </div>
           </div>
-          <div className="h-[350px] w-full">
+          <div className="h-[350px] w-full min-h-[350px]">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={data}>
                 <defs>
@@ -246,7 +246,7 @@ const Analytics = () => {
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
         <div className="bg-white dark:bg-surface-dark p-6 rounded-xl border border-slate-200 dark:border-border-dark shadow-sm">
           <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-8">Consultation Volume</h3>
-          <div className="h-[250px] w-full">
+          <div className="h-[250px] w-full min-h-[250px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={volumeData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" opacity={0.05} />

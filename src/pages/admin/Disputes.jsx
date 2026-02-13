@@ -20,6 +20,8 @@ const Disputes = () => {
 
   const [selectedDisputeId, setSelectedDisputeId] = useState(disputes?.[0]?.id || null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeMenu, setActiveMenu] = useState(null);
+  const [statusFilter, setStatusFilter] = useState("All Status");
 
   const selectedDispute = disputes.find(d => d.id === selectedDisputeId) || disputes?.[0] || null;
 
@@ -93,15 +95,38 @@ const Disputes = () => {
         {/* Left Column: List */}
         <div className="w-1/3 flex flex-col gap-4 min-h-0 bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark rounded-2xl overflow-hidden shadow-sm">
           <div className="p-4 border-b border-slate-100 dark:border-border-dark">
-            <div className="relative">
-              <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Search cases..."
-                className="w-full bg-slate-50 dark:bg-background-dark border-none rounded-lg pl-9 pr-4 py-2 text-xs focus:ring-1 focus:ring-primary/30 text-slate-900 dark:text-white"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search cases..."
+                  className="w-full bg-slate-50 dark:bg-background-dark border-none rounded-lg pl-9 pr-4 py-2 text-xs focus:ring-1 focus:ring-primary/30 text-slate-900 dark:text-white"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+              <div className="relative">
+                <button 
+                  onClick={() => setActiveMenu(activeMenu === 'filter' ? null : 'filter')}
+                  className={`p-2 rounded-lg border transition-all ${activeMenu === 'filter' ? 'bg-primary text-white border-primary' : 'bg-slate-50 dark:bg-background-dark text-slate-400 border-transparent hover:border-slate-300'}`}
+                >
+                  <MdFilterList className="text-lg" />
+                </button>
+                {activeMenu === 'filter' && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark rounded-xl shadow-2xl z-[80] p-1 animate-in fade-in slide-in-from-top-1 duration-200">
+                    {['All Status', 'Pending', 'In Progress', 'Resolved'].map(opt => (
+                      <button 
+                        key={opt}
+                        onClick={() => {setStatusFilter(opt); setActiveMenu(null);}}
+                        className="w-full text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-background-dark rounded-lg transition-colors"
+                      >
+                        {opt}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
           <div className="flex-1 overflow-y-auto divide-y divide-slate-50 dark:divide-border-dark/50">

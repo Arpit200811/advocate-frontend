@@ -31,8 +31,10 @@ import { useData } from "../../context/DataContext";
 const Reviews = () => {
   const { reviews, updateReview } = useData();
   const [searchQuery, setSearchQuery] = useState("");
-  const [showModal, setShowModal] = useState(false);
   const [selectedReview, setSelectedReview] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [activeMenu, setActiveMenu] = useState(null);
+  const [filter, setFilter] = useState("Newest First");
 
   const filteredReviews = reviews.filter(
     (review) =>
@@ -137,15 +139,28 @@ const Reviews = () => {
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white">Moderation Queue</h3>
                 <div className="flex gap-2">
-                  <select className="bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark text-xs font-medium rounded-lg px-3 py-1.5 focus:ring-primary outline-none transition-all text-slate-700 dark:text-slate-300">
-                    <option>Newest First</option>
-                    <option>Highest Rated</option>
-                    <option>Lowest Rated</option>
-                    <option>Sentiment (Low to High)</option>
-                  </select>
-                  <button className="bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark p-1.5 rounded-lg text-slate-500 hover:text-primary transition-colors">
-                    <MdFilterList className="text-xl" />
-                  </button>
+                  <div className="relative">
+                    <button 
+                      onClick={() => setActiveMenu(activeMenu === 'filter' ? null : 'filter')}
+                      className={`flex items-center gap-2 bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark text-xs font-medium rounded-lg px-3 py-1.5 focus:ring-primary outline-none transition-all ${activeMenu === 'filter' ? 'border-primary text-primary' : 'text-slate-700 dark:text-slate-300'}`}
+                    >
+                      {filter}
+                      <MdFilterList className="text-xl" />
+                    </button>
+                    {activeMenu === 'filter' && (
+                      <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark rounded-xl shadow-2xl z-[80] p-1 animate-in fade-in slide-in-from-top-1 duration-200">
+                        {['Newest First', 'Highest Rated', 'Lowest Rated', 'Sentiment (Low to High)'].map(opt => (
+                          <button 
+                            key={opt}
+                            onClick={() => {setFilter(opt); setActiveMenu(null);}}
+                            className="w-full text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-background-dark rounded-lg transition-colors"
+                          >
+                            {opt}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 

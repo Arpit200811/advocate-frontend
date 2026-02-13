@@ -41,6 +41,7 @@ const weeklyData = [
 const Dashboard = () => {
   const { lawyers, users, consultations } = useData();
   const [timeRange, setTimeRange] = useState("monthly");
+  const [activeMenu, setActiveMenu] = useState(null);
 
   const data = timeRange === "monthly" ? monthlyData : weeklyData;
 
@@ -152,7 +153,7 @@ const Dashboard = () => {
               </button>
             </div>
           </div>
-          <div className="h-72 w-full relative">
+          <div className="h-72 w-full relative min-h-[18rem]">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart
                 data={data}
@@ -292,10 +293,27 @@ const Dashboard = () => {
                       Paid
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-right">
-                    <button className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400 transition-colors">
+                  <td className="px-6 py-4 text-right relative">
+                    <button 
+                      onClick={() => setActiveMenu(activeMenu === i ? null : i)}
+                      className={`p-2 rounded-lg transition-colors ${activeMenu === i ? 'bg-primary text-white' : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400'}`}
+                    >
                       <MdMoreVert className="text-xl" />
                     </button>
+                    {activeMenu === i && (
+                      <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark rounded-xl shadow-2xl z-[80] p-1 animate-in fade-in slide-in-from-top-1 duration-200">
+                        <button className="w-full text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-background-dark rounded-lg transition-colors">
+                          View Details
+                        </button>
+                        <button className="w-full text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-background-dark rounded-lg transition-colors">
+                          Download Receipt
+                        </button>
+                        <div className="h-px bg-slate-100 dark:bg-border-dark my-1"></div>
+                        <button className="w-full text-left px-3 py-2 text-xs font-bold text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-colors">
+                          Flag Session
+                        </button>
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))}

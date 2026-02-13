@@ -8,6 +8,7 @@ const Promotions = () => {
   const { offers } = useData();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("All Offers");
+  const [activeMenu, setActiveMenu] = useState(null);
 
   const filteredOffers = offers.filter((offer) => {
     const matchesSearch = offer.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -87,7 +88,7 @@ const Promotions = () => {
             <p className="text-sm font-black text-primary mb-4 uppercase tracking-[0.15em]">Active Campaigns</p>
             <div className="flex items-end gap-2 h-24">
               {[40, 60, 35, 85, 55, 95, 70].map((h, i) => (
-                <div key={i} className={`w-full bg-primary/40 rounded-t transition-all hover:bg-primary h-[${h}%]`}></div>
+                <div key={i} className="w-full bg-primary/40 rounded-t transition-all hover:bg-primary" style={{ height: `${h}%` }}></div>
               ))}
             </div>
             <p className="text-[10px] font-black uppercase text-center mt-4 text-slate-500 tracking-widest">Usage Activity (Last 7 Days)</p>
@@ -171,10 +172,27 @@ const Promotions = () => {
                           {offer.status}
                         </span>
                       </td>
-                      <td className="px-6 py-5 text-right">
-                        <button className="p-2 hover:bg-slate-100 dark:hover:bg-background-dark rounded-lg text-slate-400 transition-colors">
+                      <td className="px-6 py-5 text-right relative">
+                        <button 
+                          onClick={() => setActiveMenu(activeMenu === offer.id ? null : offer.id)}
+                          className={`p-2 rounded-lg transition-colors ${activeMenu === offer.id ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'hover:bg-slate-100 dark:hover:bg-background-dark text-slate-400'}`}
+                        >
                           <MdMoreVert className="text-xl" />
                         </button>
+                        {activeMenu === offer.id && (
+                          <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark rounded-xl shadow-2xl z-[80] p-1 animate-in fade-in slide-in-from-top-1 duration-200">
+                            <button className="w-full text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-background-dark rounded-lg transition-colors">
+                              Edit Campaign
+                            </button>
+                            <button className="w-full text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-background-dark rounded-lg transition-colors">
+                              Duplicate Offer
+                            </button>
+                            <div className="h-px bg-slate-100 dark:bg-border-dark my-1"></div>
+                            <button className="w-full text-left px-3 py-2 text-xs font-bold text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-colors">
+                              Terminate Early
+                            </button>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   ))}

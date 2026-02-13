@@ -23,6 +23,13 @@ import { useData } from "../../context/DataContext";
 
 const Lawyers = () => {
   const { lawyers, updateLawyer } = useData();
+  const [activeFilter, setActiveFilter] = useState(null);
+  const [filters, setFilters] = useState({
+    availability: "All",
+    practiceArea: "Corporate",
+    rating: "4.5+",
+    earnings: "High to Low"
+  });
   // Using a local state for performance reviews as they are mostly static for now
   const performanceReviews = [
     {
@@ -167,12 +174,101 @@ const Lawyers = () => {
         <div className="bg-white dark:bg-[#1c1c27] rounded-xl border border-slate-200 dark:border-[#3d3b54] overflow-hidden shadow-sm transition-all duration-300">
           {/* Table Header / Filters */}
           <div className="p-4 border-b border-slate-200 dark:border-border-dark flex flex-wrap gap-3 items-center bg-slate-50/50 dark:bg-background-dark/30">
-            {["Availability: All", "Practice Area: Corporate", "Rating: 4.5+", "Earnings: High to Low"].map((filter) => (
-              <button key={filter} className="flex items-center gap-2 bg-slate-100 dark:bg-background-dark px-3 py-1.5 rounded-lg text-sm font-medium border border-transparent hover:border-slate-300 dark:hover:border-slate-600 transition-all text-slate-600 dark:text-slate-300">
-                {filter}
-                <MdExpandMore className="text-sm" />
+            {/* Availability Filter */}
+            <div className="relative">
+              <button 
+                onClick={() => setActiveFilter(activeFilter === 'availability' ? null : 'availability')}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium border transition-all ${activeFilter === 'availability' ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20' : 'bg-slate-100 dark:bg-background-dark text-slate-600 dark:text-slate-300 border-transparent hover:border-slate-300 dark:hover:border-slate-600'}`}
+              >
+                Availability: {filters.availability}
+                <MdExpandMore className={`text-sm transition-transform duration-300 ${activeFilter === 'availability' ? 'rotate-180' : ''}`} />
               </button>
-            ))}
+              {activeFilter === 'availability' && (
+                <div className="absolute left-0 mt-2 w-48 bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark rounded-xl shadow-2xl z-[70] p-1 animate-in fade-in slide-in-from-top-1 duration-200">
+                  {['All', 'Online', 'Away', 'Offline'].map(opt => (
+                    <button 
+                      key={opt}
+                      onClick={() => {setFilters({...filters, availability: opt}); setActiveFilter(null);}}
+                      className="w-full text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-background-dark rounded-lg transition-colors"
+                    >
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Practice Area Filter */}
+            <div className="relative">
+              <button 
+                onClick={() => setActiveFilter(activeFilter === 'practice' ? null : 'practice')}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium border transition-all ${activeFilter === 'practice' ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20' : 'bg-slate-100 dark:bg-background-dark text-slate-600 dark:text-slate-300 border-transparent hover:border-slate-300 dark:hover:border-slate-600'}`}
+              >
+                Practice Area: {filters.practiceArea}
+                <MdExpandMore className={`text-sm transition-transform duration-300 ${activeFilter === 'practice' ? 'rotate-180' : ''}`} />
+              </button>
+              {activeFilter === 'practice' && (
+                <div className="absolute left-0 mt-2 w-48 bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark rounded-xl shadow-2xl z-[70] p-1 animate-in fade-in slide-in-from-top-1 duration-200">
+                  {['Corporate', 'Family', 'Criminal', 'IP'].map(opt => (
+                    <button 
+                      key={opt}
+                      onClick={() => {setFilters({...filters, practiceArea: opt}); setActiveFilter(null);}}
+                      className="w-full text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-background-dark rounded-lg transition-colors"
+                    >
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Rating Filter */}
+            <div className="relative">
+              <button 
+                onClick={() => setActiveFilter(activeFilter === 'rating' ? null : 'rating')}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium border transition-all ${activeFilter === 'rating' ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20' : 'bg-slate-100 dark:bg-background-dark text-slate-600 dark:text-slate-300 border-transparent hover:border-slate-300 dark:hover:border-slate-600'}`}
+              >
+                Rating: {filters.rating}
+                <MdExpandMore className={`text-sm transition-transform duration-300 ${activeFilter === 'rating' ? 'rotate-180' : ''}`} />
+              </button>
+              {activeFilter === 'rating' && (
+                <div className="absolute left-0 mt-2 w-48 bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark rounded-xl shadow-2xl z-[70] p-1 animate-in fade-in slide-in-from-top-1 duration-200">
+                  {['4.5+', '4.0+', '3.5+', 'All Ratings'].map(opt => (
+                    <button 
+                      key={opt}
+                      onClick={() => {setFilters({...filters, rating: opt}); setActiveFilter(null);}}
+                      className="w-full text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-background-dark rounded-lg transition-colors"
+                    >
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Earnings Filter */}
+            <div className="relative">
+              <button 
+                onClick={() => setActiveFilter(activeFilter === 'earnings' ? null : 'earnings')}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium border transition-all ${activeFilter === 'earnings' ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20' : 'bg-slate-100 dark:bg-background-dark text-slate-600 dark:text-slate-300 border-transparent hover:border-slate-300 dark:hover:border-slate-600'}`}
+              >
+                Earnings: {filters.earnings}
+                <MdExpandMore className={`text-sm transition-transform duration-300 ${activeFilter === 'earnings' ? 'rotate-180' : ''}`} />
+              </button>
+              {activeFilter === 'earnings' && (
+                <div className="absolute left-0 mt-2 w-48 bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark rounded-xl shadow-2xl z-[70] p-1 animate-in fade-in slide-in-from-top-1 duration-200">
+                  {['High to Low', 'Low to High'].map(opt => (
+                    <button 
+                      key={opt}
+                      onClick={() => {setFilters({...filters, earnings: opt}); setActiveFilter(null);}}
+                      className="w-full text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-background-dark rounded-lg transition-colors"
+                    >
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <div className="flex-1"></div>
             <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider px-2">
               Showing {filteredLawyers.length} of 1,284

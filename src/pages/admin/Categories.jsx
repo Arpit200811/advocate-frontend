@@ -31,6 +31,7 @@ const Categories = () => {
   const { categories, setCategories } = useData();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("All Categories");
+  const [activeMenu, setActiveMenu] = useState(null); // id of the category with open menu
 
   const filteredCategories = categories.filter((cat) => {
     const matchesSearch =
@@ -202,10 +203,30 @@ const Categories = () => {
                   <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400 group-hover/toggle:text-primary transition-colors">{cat.status}</span>
                 </div>
               </div>
-              <div className="w-full md:w-16 flex justify-end mt-4 md:mt-0">
-                <button className="p-2 hover:bg-slate-100 dark:hover:bg-background-dark rounded-lg transition-colors text-slate-400">
+              <div className="w-full md:w-16 flex justify-end mt-4 md:mt-0 relative">
+                <button 
+                  onClick={() => setActiveMenu(activeMenu === cat.id ? null : cat.id)}
+                  className={`p-2 rounded-lg transition-colors ${activeMenu === cat.id ? 'bg-primary text-white' : 'hover:bg-slate-100 dark:hover:bg-background-dark text-slate-400'}`}
+                >
                   <MdMoreVert className="text-xl" />
                 </button>
+                {activeMenu === cat.id && (
+                  <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark rounded-xl shadow-2xl z-[80] p-1 animate-in fade-in slide-in-from-top-1 duration-200">
+                    <button className="w-full text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-background-dark rounded-lg transition-colors flex items-center gap-2">
+                      <MdSettings className="text-base" /> Edit Configuration
+                    </button>
+                    <button className="w-full text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-background-dark rounded-lg transition-colors flex items-center gap-2">
+                       <MdDashboard className="text-base" /> Analytics
+                    </button>
+                    <div className="h-px bg-slate-100 dark:bg-border-dark my-1"></div>
+                    <button 
+                      onClick={() => {toggleStatus(cat.id, cat.status); setActiveMenu(null);}}
+                      className="w-full text-left px-3 py-2 text-xs font-bold text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-colors flex items-center gap-2"
+                    >
+                      {cat.status === 'Enabled' ? 'Disable' : 'Enable'} Category
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           ))}

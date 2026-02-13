@@ -7,10 +7,10 @@ import {
   MdHistory,
   MdCalendarToday,
 } from "react-icons/md";
-import { initialConsultations } from "../../data/mockData";
+import { useData } from "../../context/DataContext";
 
 const Consultations = () => {
-  const [consultations, setConsultations] = useState(initialConsultations);
+  const { consultations } = useData();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
 
@@ -157,8 +157,17 @@ const Consultations = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="7" className="px-6 py-10 text-center text-slate-500 dark:text-slate-400">
-                    No matching consultation logs found.
+                  <td colSpan="7" className="py-20 text-center">
+                    <div className="flex flex-col items-center justify-center opacity-40">
+                      <MdSearch className="text-6xl text-slate-300 dark:text-[#3d3b54] mb-4" />
+                      <p className="text-sm font-black uppercase tracking-[0.2em] text-slate-500">No matching consultations found</p>
+                      <button 
+                        onClick={() => {setSearchQuery(""); setStatusFilter("All");}}
+                        className="mt-4 text-xs font-bold text-primary hover:underline"
+                      >
+                        Reset search filters
+                      </button>
+                    </div>
                   </td>
                 </tr>
               )}
