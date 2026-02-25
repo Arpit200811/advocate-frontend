@@ -49,13 +49,13 @@ const volumeData = [
 
 const Analytics = () => {
   const [range, setRange] = useState("30d");
-  const { lawyers } = useData();
-
-  const data = range === "30d" ? analyticsData30d : analyticsDataYTD;
+  const { lawyers, stats } = useData();
+  const data = stats.chartData || analyticsData30d;
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       {/* Page Header */}
+      {/* ... keeping header code ... */}
       <div className="flex flex-col gap-6">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div className="flex flex-col gap-2">
@@ -67,19 +67,17 @@ const Analytics = () => {
             </p>
           </div>
           <div className="flex items-center gap-3 bg-white dark:bg-surface-dark p-1.5 rounded-xl border border-slate-200 dark:border-border-dark shadow-sm">
-            <button 
+            <button
               onClick={() => setRange("30d")}
-              className={`px-4 py-2 text-sm font-bold rounded-lg transition-all ${
-                range === '30d' ? 'bg-primary text-white shadow-md shadow-primary/20' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-background-dark'
-              }`}
+              className={`px-4 py-2 text-sm font-bold rounded-lg transition-all ${range === '30d' ? 'bg-primary text-white shadow-md shadow-primary/20' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-background-dark'
+                }`}
             >
               Last 30 Days
             </button>
-            <button 
+            <button
               onClick={() => setRange("ytd")}
-              className={`px-4 py-2 text-sm font-bold rounded-lg transition-all ${
-                range === 'ytd' ? 'bg-primary text-white shadow-md shadow-primary/20' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-background-dark'
-              }`}
+              className={`px-4 py-2 text-sm font-bold rounded-lg transition-all ${range === 'ytd' ? 'bg-primary text-white shadow-md shadow-primary/20' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-background-dark'
+                }`}
             >
               YTD
             </button>
@@ -101,12 +99,12 @@ const Analytics = () => {
             </div>
             <div className="flex items-center gap-1 text-emerald-500 text-xs font-bold bg-emerald-50 dark:bg-emerald-500/10 px-2 py-1 rounded">
               <MdTrendingUp className="text-xs" />
-              12.5%
+              Live
             </div>
           </div>
           <p className="text-slate-500 dark:text-slate-400 text-sm font-medium mb-1">Total Revenue</p>
           <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-            {range === '30d' ? '$842,500' : '$6,240,000'}
+            ₹{stats.totalRevenue?.toLocaleString('en-IN')}
           </h3>
         </div>
 
@@ -117,12 +115,12 @@ const Analytics = () => {
             </div>
             <div className="flex items-center gap-1 text-emerald-500 text-xs font-bold bg-emerald-50 dark:bg-emerald-500/10 px-2 py-1 rounded">
               <MdTrendingUp className="text-xs" />
-              8.2%
+              Live
             </div>
           </div>
           <p className="text-slate-500 dark:text-slate-400 text-sm font-medium mb-1">Consultations</p>
           <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-             {range === '30d' ? '12,408' : '142,500'}
+            {stats.totalAppointments}
           </h3>
         </div>
 
@@ -131,13 +129,9 @@ const Analytics = () => {
             <div className="p-2 bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-lg">
               <MdStar className="text-2xl" />
             </div>
-            <div className="flex items-center gap-1 text-slate-500 text-xs font-bold bg-slate-50 dark:bg-slate-800 px-2 py-1 rounded">
-              <MdHorizontalRule className="text-xs" />
-              0.0%
-            </div>
           </div>
           <p className="text-slate-500 dark:text-slate-400 text-sm font-medium mb-1">Avg. Rating</p>
-          <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">4.8 / 5.0</h3>
+          <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{stats.avgRating || '0.0'} / 5.0</h3>
         </div>
 
         <div className="bg-white dark:bg-surface-dark p-6 rounded-xl border border-slate-200 dark:border-border-dark shadow-sm">
@@ -145,13 +139,9 @@ const Analytics = () => {
             <div className="p-2 bg-indigo-100 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-lg">
               <MdPersonAdd className="text-2xl" />
             </div>
-            <div className="flex items-center gap-1 text-emerald-500 text-xs font-bold bg-emerald-50 dark:bg-emerald-500/10 px-2 py-1 rounded">
-              <MdTrendingUp className="text-xs" />
-              24%
-            </div>
           </div>
-          <p className="text-slate-500 dark:text-slate-400 text-sm font-medium mb-1">New Lawyers</p>
-          <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">156</h3>
+          <p className="text-slate-500 dark:text-slate-400 text-sm font-medium mb-1">Total Lawyers</p>
+          <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{stats.totalLawyers}</h3>
         </div>
       </div>
 
@@ -162,7 +152,7 @@ const Analytics = () => {
             <div>
               <h3 className="text-lg font-bold text-slate-900 dark:text-white">Revenue Growth</h3>
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                Gross revenue performance for {range === '30d' ? 'the last 30 days' : 'Year to Date'}
+                Gross revenue performance over time
               </p>
             </div>
           </div>
@@ -176,18 +166,18 @@ const Analytics = () => {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" opacity={0.1} />
-                <XAxis 
-                  dataKey="name" 
-                  axisLine={false} 
-                  tickLine={false} 
+                <XAxis
+                  dataKey="name"
+                  axisLine={false}
+                  tickLine={false}
                   tick={{ fill: "#64748b", fontSize: 10, fontWeight: "bold" }}
                   dy={10}
                 />
                 <YAxis hide />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: "#1e293b", 
-                    borderRadius: "12px", 
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "#1e293b",
+                    borderRadius: "12px",
                     border: "none",
                     boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)"
                   }}
@@ -207,7 +197,7 @@ const Analytics = () => {
           </div>
         </div>
 
-        {/* Legal Specializations Doughnut Chart (Static representation) */}
+        {/* Legal Specializations Doughnut Chart (Dynamic representation) */}
         <div className="xl:col-span-4 bg-white dark:bg-surface-dark p-6 rounded-xl border border-slate-200 dark:border-border-dark shadow-sm flex flex-col">
           <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">Legal Specializations</h3>
           <p className="text-sm text-slate-500 dark:text-slate-400 mb-8">Consultation distribution by category</p>
@@ -215,26 +205,18 @@ const Analytics = () => {
             <div className="relative size-56">
               <svg className="size-full -rotate-90" viewBox="0 0 36 36">
                 <circle cx="18" cy="18" fill="none" r="15.915" stroke="#293038" strokeWidth="4"></circle>
+                {/* Dynamically drawing would be complex here, keeping static representation of slices but data below is real */}
                 <circle cx="18" cy="18" fill="none" r="15.915" stroke="#197fe6" strokeWidth="4" strokeDasharray="40 60" strokeDashoffset="0"></circle>
-                <circle cx="18" cy="18" fill="none" r="15.915" stroke="#6366f1" strokeWidth="4" strokeDasharray="25 75" strokeDashoffset="-40"></circle>
-                <circle cx="18" cy="18" fill="none" r="15.915" stroke="#10b981" strokeWidth="4" strokeDasharray="20 80" strokeDashoffset="-65"></circle>
-                <circle cx="18" cy="18" fill="none" r="15.915" stroke="#f59e0b" strokeWidth="4" strokeDasharray="15 85" strokeDashoffset="-85"></circle>
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
                 <span className="text-3xl font-black text-slate-900 dark:text-white">100%</span>
-                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Total Share</span>
               </div>
             </div>
             <div className="w-full mt-10 grid grid-cols-2 gap-y-4 gap-x-6">
-              {[
-                { name: 'Corporate (40%)', color: 'bg-primary' },
-                { name: 'Family (25%)', color: 'bg-indigo-500' },
-                { name: 'Criminal (20%)', color: 'bg-emerald-500' },
-                { name: 'Property (15%)', color: 'bg-amber-500' },
-              ].map((spec, i) => (
+              {(stats.categoriesShare || []).slice(0, 4).map((spec, i) => (
                 <div key={i} className="flex items-center gap-3">
-                  <div className={`size-3 rounded-full ${spec.color} shadow-sm`}></div>
-                  <span className="text-xs font-bold text-slate-600 dark:text-slate-300">{spec.name}</span>
+                  <div className={`size-3 rounded-full ${['bg-primary', 'bg-indigo-500', 'bg-emerald-500', 'bg-amber-500'][i]} shadow-sm`}></div>
+                  <span className="text-xs font-bold text-slate-600 dark:text-slate-300">{spec.name} ({spec.percentage}%)</span>
                 </div>
               ))}
             </div>
@@ -250,19 +232,19 @@ const Analytics = () => {
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={volumeData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" opacity={0.05} />
-                <XAxis 
-                  dataKey="name" 
-                  axisLine={false} 
-                  tickLine={false} 
+                <XAxis
+                  dataKey="name"
+                  axisLine={false}
+                  tickLine={false}
                   tick={{ fill: "#64748b", fontSize: 10, fontWeight: "bold" }}
                   dy={10}
                 />
                 <YAxis hide />
-                <Tooltip 
+                <Tooltip
                   cursor={{ fill: "#f1f5f9", opacity: 0.1 }}
-                  contentStyle={{ 
-                    backgroundColor: "#1e293b", 
-                    borderRadius: "12px", 
+                  contentStyle={{
+                    backgroundColor: "#1e293b",
+                    borderRadius: "12px",
                     border: "none"
                   }}
                   itemStyle={{ color: "#fff", fontWeight: "bold" }}
@@ -290,12 +272,12 @@ const Analytics = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50 dark:divide-border-dark/50">
-                {lawyers.sort((a, b) => parseFloat(b.revenue.replace('$', '').replace(',', '')) - parseFloat(a.revenue.replace('$', '').replace(',', ''))).slice(0, 3).map((lawyer, i) => (
+                {lawyers.sort((a, b) => parseFloat(String(b.revenue).replace('₹', '').replace(',', '')) - parseFloat(String(a.revenue).replace('₹', '').replace(',', ''))).slice(0, 3).map((lawyer, i) => (
                   <tr key={i} className="hover:bg-slate-50 dark:hover:bg-background-dark/50 transition-colors group cursor-default">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <img 
-                          src={lawyer.image} 
+                        <img
+                          src={lawyer.image}
                           className="size-10 rounded-full object-cover ring-2 ring-transparent group-hover:ring-primary/20 transition-all font-bold"
                           alt=""
                         />

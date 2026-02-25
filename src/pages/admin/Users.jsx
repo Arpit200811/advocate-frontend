@@ -15,11 +15,13 @@ import {
   MdLastPage,
   MdPersonAdd,
   MdSearchOff,
+  MdDelete
 } from "react-icons/md";
 import { useData } from "../../context/DataContext";
+import { exportToCSV } from "../../utils/exportHelper";
 
 const Users = () => {
-  const { users, updateUser } = useData();
+  const { users, updateUser, addUser, deleteUser, sendSystemMessage } = useData();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [currentPage, setCurrentPage] = useState(1);
@@ -51,10 +53,63 @@ const Users = () => {
     });
   };
 
+  const handleDeleteUser = (user) => {
+    Swal.fire({
+      title: 'Delete User?',
+      text: `Are you sure you want to permanently delete ${user.name}? All their data will be removed.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Yes, Delete'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        deleteUser(user.id);
+        Swal.fire('Deleted', 'User has been removed.', 'success');
+      }
+    });
+  };
+
+  const handleViewProfile = (user) => {
+    Swal.fire({
+      title: 'Client Profile',
+      html: `
+        <div class="text-left space-y-3 p-2">
+          <div class="flex justify-between border-b pb-2">
+            <span class="font-bold">Client ID:</span>
+            <span class="text-xs font-mono">${user.id}</span>
+          </div>
+          <div class="flex justify-between border-b pb-2">
+            <span class="font-bold">Full Name:</span>
+            <span>${user.name}</span>
+          </div>
+          <div class="flex justify-between border-b pb-2">
+            <span class="font-bold">Email:</span>
+            <span>${user.email}</span>
+          </div>
+          <div class="flex justify-between border-b pb-2">
+            <span class="font-bold">Consultations:</span>
+            <span>${user.consultations || 0}</span>
+          </div>
+          <div class="flex justify-between border-b pb-2">
+            <span class="font-bold">Status:</span>
+            <span class="px-2 py-0.5 rounded ${user.status === 'Active' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'} text-[10px] font-black">${user.status}</span>
+          </div>
+          <div class="flex justify-between border-b pb-2">
+            <span class="font-bold">Last Active:</span>
+            <span>${user.lastLogin || 'N/A'}</span>
+          </div>
+        </div>
+      `,
+      confirmButtonText: 'Close',
+      confirmButtonColor: '#197fe6'
+    });
+  };
+
   const filteredUsers = users.filter((user) => {
     const matchesSearch =
-      user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchQuery.toLowerCase());
+      String(user.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      String(user.email || "").toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === "All" || user.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -66,35 +121,28 @@ const Users = () => {
   );
 
   const handleExportCSV = () => {
-    const headers = ["ID", "Name", "Email", "Consultations", "Status", "Last Login"];
-    const csvContent = [
-      headers.join(","),
-      ...filteredUsers.map(u => `${u.id},${u.name},${u.email},${u.consultations},${u.status},${u.lastLogin}`)
-    ].join("\n");
-    
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", `users_export_${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
+    const exportData = filteredUsers.map(u => ({
+      ID: u.id,
+      Name: u.name,
+      Email: u.email,
+      Consultations: u.consultations,
+      Status: u.status,
+      LastLogin: u.lastLogin
+    }));
+
+    exportToCSV(exportData, `users_export_${new Date().toISOString().split('T')[0]}.csv`);
+
     Swal.fire({
       title: "Exported!",
       text: `${filteredUsers.length} users exported to CSV.`,
       icon: "success",
       timer: 1500,
       showConfirmButton: false,
-      confirmButtonColor: "#197fe6"
     });
   };
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      {/* Page Header & Tools */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <p className="text-sm font-semibold text-primary mb-1 uppercase tracking-[0.1em]">
@@ -108,20 +156,43 @@ const Users = () => {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <button 
+          <button
             onClick={handleExportCSV}
             className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-[#1c1c27] border border-slate-200 dark:border-[#3d3b54] rounded-lg text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-[#2a2839] transition-colors shadow-sm"
           >
             <MdDownload className="text-xl" />
             <span className="hidden sm:inline">Export CSV</span>
           </button>
-          <button 
-            onClick={() => Swal.fire({
-              title: 'Coming Soon',
-              text: 'The manual user creation feature is being implemented.',
-              icon: 'info',
-              confirmButtonColor: '#197fe6'
-            })}
+          <button
+            onClick={() => {
+              Swal.fire({
+                title: 'Add New User',
+                html:
+                  '<input id="swal-input1" class="swal2-input" placeholder="Full Name">' +
+                  '<input id="swal-input2" class="swal2-input" placeholder="Email">' +
+                  '<input id="swal-input3" type="password" class="swal2-input" placeholder="Password">',
+                focusConfirm: false,
+                showCancelButton: true,
+                confirmButtonColor: '#197fe6',
+                preConfirm: () => {
+                  return {
+                    name: document.getElementById('swal-input1').value,
+                    email: document.getElementById('swal-input2').value,
+                    password: document.getElementById('swal-input3').value
+                  }
+                }
+              }).then((result) => {
+                if (result.isConfirmed) {
+                  const { name, email, password } = result.value;
+                  if (!name || !email || !password) {
+                    Swal.fire('Error', 'Please fill all fields', 'error');
+                    return;
+                  }
+                  addUser({ name, email, password });
+                  Swal.fire('Success', 'User created successfully', 'success');
+                }
+              })
+            }}
             className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-bold hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
           >
             <MdPersonAdd className="text-xl" />
@@ -130,7 +201,6 @@ const Users = () => {
         </div>
       </div>
 
-      {/* Filter Toolbar */}
       <div className="bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark rounded-xl p-3 flex flex-wrap items-center justify-between gap-4 shadow-sm">
         <div className="flex items-center gap-3 flex-1 min-w-[300px]">
           <div className="flex-1 relative">
@@ -160,7 +230,6 @@ const Users = () => {
         </div>
       </div>
 
-      {/* Table Content */}
       <div className="bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark rounded-xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-left">
@@ -212,11 +281,10 @@ const Users = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span
-                        className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${
-                          user.status === "Active"
-                            ? "bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-400 border-green-200 dark:border-green-500/20"
-                            : "bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-400 border-red-200 dark:border-red-500/20"
-                        }`}
+                        className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${user.status === "Active"
+                          ? "bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-400 border-green-200 dark:border-green-500/20"
+                          : "bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-400 border-red-200 dark:border-red-500/20"
+                          }`}
                       >
                         {user.status}
                       </span>
@@ -227,24 +295,45 @@ const Users = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <div className="flex items-center justify-end gap-2 sm:opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
+                          onClick={() => {
+                            Swal.fire({
+                              title: `Message to ${user.name}`,
+                              input: 'textarea',
+                              inputPlaceholder: 'Type your message...',
+                              showCancelButton: true,
+                              confirmButtonColor: '#197fe6',
+                            }).then((result) => {
+                              if (result.isConfirmed) {
+                                sendMessage(user.id, result.value);
+                                Swal.fire('Sent', 'Message delivered to user inbox.', 'success');
+                              }
+                            });
+                          }}
                           className="p-1.5 hover:bg-slate-100 dark:hover:bg-[#2a2839] rounded-lg text-slate-400 hover:text-primary transition-colors"
                           title="Message User"
                         >
                           <MdMail className="text-xl" />
                         </button>
                         <button
+                          onClick={() => handleViewProfile(user)}
                           className="p-1.5 hover:bg-slate-100 dark:hover:bg-[#2a2839] rounded-lg text-slate-400 hover:text-primary transition-colors"
                           title="View Profile"
                         >
                           <MdVisibility className="text-xl" />
                         </button>
                         <button
+                          onClick={() => handleDeleteUser(user)}
+                          className="p-1.5 hover:bg-rose-50 dark:hover:bg-rose-500/10 text-slate-400 hover:text-rose-500 rounded-lg transition-colors"
+                          title="Delete User"
+                        >
+                          <MdDelete className="text-xl" />
+                        </button>
+                        <button
                           onClick={() => handleToggleStatus(user.id, user.status)}
-                          className={`p-1.5 rounded-lg transition-colors ${
-                            user.status === "Active"
-                              ? "hover:bg-rose-50 dark:hover:bg-rose-500/10 text-slate-400 hover:text-rose-500"
-                              : "hover:bg-green-50 dark:hover:bg-green-500/10 text-slate-400 hover:text-green-500"
-                          }`}
+                          className={`p-1.5 rounded-lg transition-colors ${user.status === "Active"
+                            ? "hover:bg-rose-50 dark:hover:bg-rose-500/10 text-slate-400 hover:text-rose-500"
+                            : "hover:bg-green-50 dark:hover:bg-green-500/10 text-slate-400 hover:text-green-500"
+                            }`}
                           title={user.status === "Active" ? "Suspend Account" : "Activate Account"}
                         >
                           {user.status === "Active" ? (
@@ -263,8 +352,8 @@ const Users = () => {
                     <div className="flex flex-col items-center justify-center opacity-40">
                       <MdSearchOff className="text-6xl text-slate-300 dark:text-[#3d3b54] mb-4" />
                       <p className="text-sm font-black uppercase tracking-[0.2em] text-slate-500">No matching users found</p>
-                      <button 
-                        onClick={() => {setSearchQuery(""); setStatusFilter("All");}}
+                      <button
+                        onClick={() => { setSearchQuery(""); setStatusFilter("All"); }}
                         className="mt-4 text-xs font-bold text-primary hover:underline"
                       >
                         Reset searching filters
@@ -276,14 +365,12 @@ const Users = () => {
             </tbody>
           </table>
         </div>
-
-        {/* Pagination Footer */}
         <div className="px-6 py-4 bg-slate-50 dark:bg-[#252533] border-t border-slate-200 dark:border-[#3d3b54] flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <span className="text-[10px] font-black text-slate-500 dark:text-[#9f9db9] uppercase tracking-[0.15em]">
               Rows per page:
             </span>
-            <select 
+            <select
               value={rowsPerPage}
               onChange={(e) => {
                 setRowsPerPage(Number(e.target.value));
@@ -336,5 +423,4 @@ const Users = () => {
     </div>
   );
 };
-
 export default Users;

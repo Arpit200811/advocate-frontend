@@ -23,12 +23,13 @@ import {
   MdPolicy,
   MdAddCircle,
   MdCheckCircle,
+  MdDelete
 } from "react-icons/md";
 import { Link } from "react-router-dom";
 import { useData } from "../../context/DataContext";
 
 const Categories = () => {
-  const { categories, setCategories } = useData();
+  const { categories, addCategory, updateCategory, deleteCategory } = useData();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("All Categories");
   const [activeMenu, setActiveMenu] = useState(null); // id of the category with open menu
@@ -37,7 +38,7 @@ const Categories = () => {
     const matchesSearch =
       cat.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       cat.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()));
-    
+
     if (activeTab === "All Categories") return matchesSearch;
     if (activeTab === "Active") return matchesSearch && cat.status === "Enabled";
     if (activeTab === "Archived") return matchesSearch && cat.status === "Disabled";
@@ -56,10 +57,25 @@ const Categories = () => {
       confirmButtonText: `Yes, ${newStatus}`,
     }).then((result) => {
       if (result.isConfirmed) {
-        setCategories((prev) =>
-          prev.map((cat) => (cat.id === id ? { ...cat, status: newStatus } : cat))
-        );
+        updateCategory(id, { status: newStatus });
         Swal.fire("Success", `Category has been ${newStatus.toLowerCase()}.`, "success");
+      }
+    });
+  };
+
+  const handleDelete = (id, name) => {
+    Swal.fire({
+      title: 'Delete Category?',
+      text: `Are you sure you want to permanently delete ${name}? This will affect all associated legal records.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Yes, Delete'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        deleteCategory(id);
+        Swal.fire('Deleted', 'Category removed successfully.', 'success');
       }
     });
   };
@@ -101,7 +117,35 @@ const Categories = () => {
             <MdSwapVert className="text-xl" />
             Reorder View
           </button>
-          <button className="flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary/90 text-white text-sm font-bold rounded-lg transition-all shadow-lg shadow-primary/20">
+          <button
+            onClick={() => {
+              Swal.fire({
+                title: 'Add New Category',
+                html:
+                  '<input id="cat-name" class="swal2-input" placeholder="Category Name">' +
+                  '<input id="cat-desc" class="swal2-input" placeholder="Description">' +
+                  '<input id="cat-icon" class="swal2-input" placeholder="Icon Name (Material Icon)">' +
+                  '<input id="cat-tags" class="swal2-input" placeholder="Tags (comma separated)">',
+                focusConfirm: false,
+                showCancelButton: true,
+                confirmButtonColor: '#197fe6',
+                preConfirm: () => {
+                  return {
+                    name: document.getElementById('cat-name').value,
+                    description: document.getElementById('cat-desc').value,
+                    icon: document.getElementById('cat-icon').value,
+                    tags: document.getElementById('cat-tags').value.split(',').map(t => t.trim())
+                  }
+                }
+              }).then((result) => {
+                if (result.isConfirmed) {
+                  addCategory(result.value);
+                  Swal.fire('Success', 'Category added', 'success');
+                }
+              })
+            }}
+            className="flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary/90 text-white text-sm font-bold rounded-lg transition-all shadow-lg shadow-primary/20"
+          >
             <MdAdd className="text-xl" />
             Add Category
           </button>
@@ -125,11 +169,10 @@ const Categories = () => {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 text-sm font-bold rounded-full whitespace-nowrap transition-all ${
-                activeTab === tab
-                  ? "bg-primary text-white shadow-md shadow-primary/20"
-                  : "bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700"
-              }`}
+              className={`px-4 py-2 text-sm font-bold rounded-full whitespace-nowrap transition-all ${activeTab === tab
+                ? "bg-primary text-white shadow-md shadow-primary/20"
+                : "bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700"
+                }`}
             >
               {tab}
             </button>
@@ -176,14 +219,14 @@ const Categories = () => {
               </div>
               <div className="w-full md:w-40 flex flex-col items-center justify-center mt-4 md:mt-0">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-black text-slate-700 dark:text-slate-200">${cat.hourlyRate}/hr</span>
+                  <span className="text-xs font-black text-slate-700 dark:text-slate-200">₹{cat.hourlyRate.toLocaleString('en-IN')}/hr</span>
                   <span className={`flex items-center text-[10px] font-black ${cat.trendDirection === 'up' ? 'text-emerald-500' : cat.trendDirection === 'down' ? 'text-rose-500' : 'text-slate-400'}`}>
                     {getTrendIcon(cat.trendDirection)}
                     {cat.hourlyRateTrend}%
                   </span>
                 </div>
                 <div className="w-24 h-1.5 bg-slate-100 dark:bg-background-dark rounded-full mt-2 overflow-hidden border border-slate-200/20 dark:border-border-dark/20">
-                  <div 
+                  <div
                     className={`h-full transition-all duration-1000 ${cat.trendDirection === 'up' ? 'bg-emerald-500' : cat.trendDirection === 'down' ? 'bg-rose-500' : 'bg-slate-400'}`}
                     style={{ width: `${Math.min(100, cat.hourlyRateTrend * 8)}%` }}
                   ></div>
@@ -195,7 +238,7 @@ const Categories = () => {
                 </button>
               </div>
               <div className="w-full md:w-32 flex justify-center mt-4 md:mt-0">
-                <div 
+                <div
                   onClick={() => toggleStatus(cat.id, cat.status)}
                   className="flex items-center gap-2 cursor-pointer group/toggle"
                 >
@@ -204,7 +247,11 @@ const Categories = () => {
                 </div>
               </div>
               <div className="w-full md:w-16 flex justify-end mt-4 md:mt-0 relative">
+<<<<<<< HEAD
                 <button 
+=======
+                <button
+>>>>>>> 30f6e99 (Admin Panel Enhancements: Integrated real-time promotions data, updated currency to INR, and refined dashboard analytics)
                   onClick={() => setActiveMenu(activeMenu === cat.id ? null : cat.id)}
                   className={`p-2 rounded-lg transition-colors ${activeMenu === cat.id ? 'bg-primary text-white' : 'hover:bg-slate-100 dark:hover:bg-background-dark text-slate-400'}`}
                 >
@@ -216,6 +263,7 @@ const Categories = () => {
                       <MdSettings className="text-base" /> Edit Configuration
                     </button>
                     <button className="w-full text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-background-dark rounded-lg transition-colors flex items-center gap-2">
+<<<<<<< HEAD
                        <MdDashboard className="text-base" /> Analytics
                     </button>
                     <div className="h-px bg-slate-100 dark:bg-border-dark my-1"></div>
@@ -224,6 +272,22 @@ const Categories = () => {
                       className="w-full text-left px-3 py-2 text-xs font-bold text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-colors flex items-center gap-2"
                     >
                       {cat.status === 'Enabled' ? 'Disable' : 'Enable'} Category
+=======
+                      <MdDashboard className="text-base" /> Analytics
+                    </button>
+                    <button
+                      onClick={() => { toggleStatus(cat.id, cat.status); setActiveMenu(null); }}
+                      className="w-full text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-background-dark rounded-lg transition-all flex items-center gap-2"
+                    >
+                      <MdCheckCircle className="text-base" /> {cat.status === 'Enabled' ? 'Disable' : 'Enable'} Category
+                    </button>
+                    <div className="h-px bg-slate-100 dark:bg-border-dark my-1"></div>
+                    <button
+                      onClick={() => { handleDelete(cat.id, cat.name); setActiveMenu(null); }}
+                      className="w-full text-left px-3 py-2 text-xs font-bold text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-colors flex items-center gap-2"
+                    >
+                      <MdDelete className="text-base" /> Delete Category
+>>>>>>> 30f6e99 (Admin Panel Enhancements: Integrated real-time promotions data, updated currency to INR, and refined dashboard analytics)
                     </button>
                   </div>
                 )}
@@ -294,7 +358,7 @@ const Categories = () => {
               <div>
                 <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Avg. Consultation Fee</p>
                 <div className="flex items-end gap-2">
-                  <p className="text-3xl font-black text-slate-900 dark:text-white">$240</p>
+                  <p className="text-3xl font-black text-slate-900 dark:text-white">₹240</p>
                   <span className="text-xs font-black text-emerald-500 mb-1">+4% MoM</span>
                 </div>
               </div>

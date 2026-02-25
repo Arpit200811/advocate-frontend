@@ -28,11 +28,50 @@ import {
   MdExpandMore,
 } from "react-icons/md";
 
+import { connectSocket, disconnectSocket, default as socket } from "../services/socket";
+
 const AdminLayout = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+<<<<<<< HEAD
   const { openDropdown, toggle, setOpenDropdown } = useDropdown(null); // 'notifications', 'profile'
+=======
+  const [notifications, setNotifications] = React.useState([
+    { id: 1, title: 'System initialized', detail: 'Ready for operations', time: 'Just now' }
+  ]);
+  const { openDropdown, toggle, setOpenDropdown } = useDropdown(null);
+>>>>>>> 30f6e99 (Admin Panel Enhancements: Integrated real-time promotions data, updated currency to INR, and refined dashboard analytics)
   const location = useLocation();
   const navigate = useNavigate();
+
+  React.useEffect(() => {
+    connectSocket();
+    socket.emit("join_admin");
+
+    socket.on("admin_notification", (data) => {
+      setNotifications(prev => [{
+        id: Date.now(),
+        title: data.title || 'New Notification',
+        detail: data.message || data.detail || 'New event received.',
+        time: 'Just now'
+      }, ...prev]);
+
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'info',
+        title: data.title || 'Notification',
+        text: data.message || 'New update received',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+      });
+    });
+
+    return () => {
+      socket.off("admin_notification");
+      disconnectSocket();
+    };
+  }, []);
 
   const handleLogout = (e) => {
     e.preventDefault();
@@ -69,7 +108,11 @@ const AdminLayout = () => {
     <div className="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 h-screen flex overflow-hidden font-display relative">
       {/* Mobile Sidebar Overlay */}
       {isMobileMenuOpen && (
+<<<<<<< HEAD
         <div 
+=======
+        <div
+>>>>>>> 30f6e99 (Admin Panel Enhancements: Integrated real-time promotions data, updated currency to INR, and refined dashboard analytics)
           className="fixed inset-0 bg-black/50 z-[45] lg:hidden animate-in fade-in duration-300"
           onClick={() => setIsMobileMenuOpen(false)}
         ></div>
@@ -89,7 +132,11 @@ const AdminLayout = () => {
                 <p className="text-slate-500 text-xs mt-1">Management Portal</p>
               </div>
             </div>
+<<<<<<< HEAD
             <button 
+=======
+            <button
+>>>>>>> 30f6e99 (Admin Panel Enhancements: Integrated real-time promotions data, updated currency to INR, and refined dashboard analytics)
               className="lg:hidden p-2 text-slate-400 hover:text-primary transition-colors"
               onClick={() => setIsMobileMenuOpen(false)}
             >
@@ -170,7 +217,7 @@ const AdminLayout = () => {
               <MdNotificationsActive className="text-xl" />
               <span className="text-sm font-medium">Notifications</span>
               <span className="ml-auto text-[10px] bg-primary/20 text-primary px-1.5 py-0.5 rounded font-black">
-                12
+                {notifications.length}
               </span>
             </Link>
             <Link
@@ -265,7 +312,11 @@ const AdminLayout = () => {
         {/* Top Navigation Bar */}
         <header className="h-16 flex items-center justify-between px-4 md:px-8 bg-white dark:bg-background-dark border-b border-slate-200 dark:border-border-dark z-40">
           <div className="flex items-center flex-1 gap-4">
+<<<<<<< HEAD
             <button 
+=======
+            <button
+>>>>>>> 30f6e99 (Admin Panel Enhancements: Integrated real-time promotions data, updated currency to INR, and refined dashboard analytics)
               className="lg:hidden p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-surface-dark rounded-lg transition-colors"
               onClick={() => setIsMobileMenuOpen(true)}
             >
@@ -282,14 +333,22 @@ const AdminLayout = () => {
           </div>
           <div className="flex items-center gap-2 md:gap-4">
             <div className="relative">
+<<<<<<< HEAD
               <button 
+=======
+              <button
+>>>>>>> 30f6e99 (Admin Panel Enhancements: Integrated real-time promotions data, updated currency to INR, and refined dashboard analytics)
                 onClick={() => toggle('notifications')}
                 className={`relative p-2 rounded-full transition-colors ${openDropdown === 'notifications' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-surface-dark'}`}
               >
                 <MdNotifications className="text-xl" />
                 <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-background-dark"></span>
               </button>
+<<<<<<< HEAD
               
+=======
+
+>>>>>>> 30f6e99 (Admin Panel Enhancements: Integrated real-time promotions data, updated currency to INR, and refined dashboard analytics)
               {openDropdown === 'notifications' && (
                 <div data-dropdown="notifications" className="absolute right-0 mt-3 w-80 bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark rounded-xl shadow-2xl animate-in fade-in slide-in-from-top-2 duration-200 overflow-hidden" aria-labelledby="notifications-button" role="menu" aria-expanded={openDropdown === 'notifications'}>
                   <div className="p-4 border-b border-slate-100 dark:border-border-dark flex items-center justify-between">
@@ -297,10 +356,17 @@ const AdminLayout = () => {
                     <span className="text-[10px] text-primary font-bold hover:underline cursor-pointer">Mark all as read</span>
                   </div>
                   <div className="max-h-80 overflow-y-auto p-2 space-y-1">
+<<<<<<< HEAD
                     {[1, 2, 3].map(i => (
                       <div key={i} className="p-3 hover:bg-slate-50 dark:hover:bg-background-dark rounded-lg cursor-pointer transition-colors border border-transparent hover:border-slate-100 dark:hover:border-border-dark">
                         <p className="text-xs font-bold text-slate-900 dark:text-white">New lawyer verification request #VL-922{i}</p>
                         <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">2 hours ago • Action Required</p>
+=======
+                    {notifications.map(n => (
+                      <div key={n.id} className="p-3 hover:bg-slate-50 dark:hover:bg-background-dark rounded-lg cursor-pointer transition-colors border border-transparent hover:border-slate-100 dark:hover:border-border-dark">
+                        <p className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-tighter">{n.title}</p>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">{n.time} • {n.detail}</p>
+>>>>>>> 30f6e99 (Admin Panel Enhancements: Integrated real-time promotions data, updated currency to INR, and refined dashboard analytics)
                       </div>
                     ))}
                   </div>
@@ -316,7 +382,11 @@ const AdminLayout = () => {
             </button>
             <div className="h-8 w-px bg-slate-200 dark:border-border-dark mx-1 md:mx-2"></div>
             <div className="relative">
+<<<<<<< HEAD
               <div 
+=======
+              <div
+>>>>>>> 30f6e99 (Admin Panel Enhancements: Integrated real-time promotions data, updated currency to INR, and refined dashboard analytics)
                 onClick={() => toggle('profile')}
                 className="flex items-center gap-3 pl-2 cursor-pointer group" aria-haspopup="true" aria-expanded={openDropdown === 'profile'}
               >
@@ -341,7 +411,11 @@ const AdminLayout = () => {
                     <p className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-tighter">alex.thompson@legal.com</p>
                   </div>
                   <div className="p-2 space-y-1">
+<<<<<<< HEAD
                     <button onClick={() => {navigate('/admin/settings'); setActiveDropdown(null);}} className="w-full flex items-center gap-3 px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-background-dark rounded-lg transition-colors">
+=======
+                    <button onClick={() => { navigate('/admin/settings'); setActiveDropdown(null); }} className="w-full flex items-center gap-3 px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-background-dark rounded-lg transition-colors">
+>>>>>>> 30f6e99 (Admin Panel Enhancements: Integrated real-time promotions data, updated currency to INR, and refined dashboard analytics)
                       <MdSettings className="text-base" /> My Settings
                     </button>
                     <button onClick={handleLogout} className="w-full flex items-center gap-3 px-3 py-2 text-xs font-bold text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-colors">

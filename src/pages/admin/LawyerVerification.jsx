@@ -23,13 +23,14 @@ import {
   MdInfo,
 } from "react-icons/md";
 import { useData } from "../../context/DataContext";
+import api from "../../services/api";
 
 const LawyerVerification = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { lawyers, updateLawyer } = useData();
-  
-  const lawyer = lawyers.find((l) => l.id === parseInt(id));
+  const { lawyers, updateLawyer, runBackgroundCheck } = useData();
+
+  const lawyer = lawyers.find((l) => String(l.id) === id);
 
   if (!lawyer) {
     return (
@@ -72,6 +73,39 @@ const LawyerVerification = () => {
     });
   };
 
+  const handleDocumentAction = async (type, action) => {
+    try {
+      if (action === "download") {
+        const response = await api.get(`/admin/lawyers/${id}/document/${type}?action=download`, { responseType: 'blob' });
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `${type}_document.pdf`);
+        document.body.appendChild(link);
+        link.click();
+        link.parentNode.removeChild(link);
+      } else {
+        const response = await api.get(`/admin/lawyers/${id}/document/${type}`);
+        window.open(response.data.url || "#", "_blank");
+      }
+    } catch (e) {
+      console.error(e);
+      Swal.fire("Error", "Could not access secure document", "error");
+    }
+  };
+
+  const handleRunCheck = async () => {
+    Swal.fire({
+      title: 'Running Check...',
+      text: 'Querying external background check services...',
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading()
+    });
+
+    await runBackgroundCheck(lawyer.id);
+    Swal.fire('Complete', 'Background check refreshed successfully.', 'success');
+  };
+
   return (
     <div className="relative pb-24 animate-in fade-in duration-500">
       {/* Breadcrumbs */}
@@ -91,9 +125,7 @@ const LawyerVerification = () => {
         </div>
       </div>
 
-      {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Sidebar: Profile Summary */}
         <aside className="lg:col-span-3 flex flex-col gap-6">
           <div className="bg-white dark:bg-surface-dark p-6 rounded-xl border border-slate-200 dark:border-border-dark shadow-sm">
             <div className="flex flex-col items-center text-center mb-6">
@@ -109,11 +141,10 @@ const LawyerVerification = () => {
               <p className="text-primary font-medium text-sm mt-1">
                 {lawyer.specialization}
               </p>
-              <div className={`mt-4 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                lawyer.status === "Approved" ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400" :
+              <div className={`mt-4 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${lawyer.status === "Approved" ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400" :
                 lawyer.status === "Pending Review" ? "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400" :
-                "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"
-              }`}>
+                  "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"
+                }`}>
                 {lawyer.status}
               </div>
             </div>
@@ -177,37 +208,56 @@ const LawyerVerification = () => {
             </h3>
             <div className="space-y-4">
               <div className="flex items-center gap-3">
-                <MdCheckCircle className="text-green-500 text-lg" />
+                {lawyer.documents?.passport && lawyer.documents?.license ? (
+                  <MdCheckCircle className="text-green-500 text-lg" />
+                ) : (
+                  <MdPending className="text-amber-500 text-lg" />
+                )}
                 <p className="text-sm flex-1 text-slate-600 dark:text-slate-300">
                   Identity Documents
                 </p>
-                <span className="text-xs text-slate-500">2/2</span>
+                <span className="text-xs text-slate-500">
+                  {(lawyer.documents?.passport ? 1 : 0) + (lawyer.documents?.license ? 1 : 0)}/2
+                </span>
               </div>
               <div className="flex items-center gap-3">
-                <MdPending className="text-primary text-lg" />
+                {lawyer.documents?.barCert ? (
+                  <MdCheckCircle className="text-green-500 text-lg" />
+                ) : (
+                  <MdRadioButtonUnchecked className="text-slate-400 text-lg" />
+                )}
                 <p className="text-sm flex-1 text-slate-600 dark:text-slate-300">
                   Bar Certification
                 </p>
-                <span className="text-xs text-slate-500">1/1</span>
+                <span className="text-xs text-slate-500">
+                  {lawyer.documents?.barCert ? '1/1' : '0/1'}
+                </span>
               </div>
               <div className="flex items-center gap-3">
-                <MdRadioButtonUnchecked className="text-slate-400 text-lg" />
-                <p className="text-sm flex-1 text-slate-400">Background Check</p>
-                <span className="text-xs text-slate-500">Pending</span>
+                {lawyer.documents?.insurance ? (
+                  <MdCheckCircle className="text-green-500 text-lg" />
+                ) : (
+                  <MdRadioButtonUnchecked className="text-slate-400 text-lg" />
+                )}
+                <p className="text-sm flex-1 text-slate-600 dark:text-slate-300">Background Check</p>
+                <span className="text-xs text-slate-500">
+                  {lawyer.documents?.insurance ? 'Verified' : 'Pending'}
+                </span>
               </div>
               <div className="w-full bg-slate-100 dark:bg-background-dark h-2 rounded-full mt-4 overflow-hidden border border-slate-200 dark:border-border-dark">
-                <div className="bg-primary h-full w-[66%]"></div>
+                <div
+                  className="bg-primary h-full transition-all duration-500"
+                  style={{ width: `${(((lawyer.documents?.passport ? 1 : 0) + (lawyer.documents?.license ? 1 : 0) + (lawyer.documents?.barCert ? 1 : 0) + (lawyer.documents?.insurance ? 1 : 0)) / 4) * 100}%` }}
+                ></div>
               </div>
               <p className="text-[10px] text-center text-slate-500 mt-2 font-medium tracking-wide">
-                66% OF STEPS COMPLETED
+                {Math.round((((lawyer.documents?.passport ? 1 : 0) + (lawyer.documents?.license ? 1 : 0) + (lawyer.documents?.barCert ? 1 : 0) + (lawyer.documents?.insurance ? 1 : 0)) / 4) * 100)}% OF STEPS COMPLETED
               </p>
             </div>
           </div>
         </aside>
 
-        {/* Main Content Area */}
         <div className="lg:col-span-9 flex flex-col gap-6">
-          {/* Identity Documents Section */}
           <section className="bg-white dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-border-dark overflow-hidden shadow-sm">
             <div className="p-6 border-b border-slate-100 dark:border-border-dark flex items-center justify-between">
               <div className="flex items-center gap-2 text-primary">
@@ -217,62 +267,64 @@ const LawyerVerification = () => {
                 </h2>
               </div>
               <span className="text-xs font-medium text-slate-500">
-                Uploaded 48h ago
+                Uploaded Recently
               </span>
             </div>
             <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="group relative">
-                <div
-                  className="aspect-video w-full rounded-lg bg-slate-100 dark:bg-background-dark bg-cover bg-center overflow-hidden border border-slate-200 dark:border-border-dark"
-                  style={{
-                    backgroundImage:
-                      "url('https://lh3.googleusercontent.com/aida-public/AB6AXuBZ5UsWBc99Xh-iqIrJXBEo--QSoWcdh5yHOTEoTkUSm3bp782O2LfUUyTWhFNeqlgFQbbCc6yi0LBRjqLRfI5SgrJ4baGXJ69ojHRbazqKoqrUoYgz8vUGh8VS3u7l2owxgqqEEHcU748SWZC6-edDDrf3vRzXg75IC1dVo_KDXGlWyDMvU5nS5LxiYN6Lpa3LUzArHsKr26lcJkVyvN1yAffr__i_fJZxVjLBE7HOcOxPaAYfZ6qzCnAKeyWAjiuSZfX_V5kclS2B')",
-                  }}
-                >
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center backdrop-blur-[2px]">
-                    <button className="bg-white/20 backdrop-blur-md p-3 rounded-full text-white hover:bg-white/40 transition-colors shadow-lg border border-white/20">
-                      <MdZoomIn className="text-2xl" />
-                    </button>
+              {lawyer.documents?.passport && (
+                <div className="group relative">
+                  <div
+                    className="aspect-video w-full rounded-lg bg-slate-100 dark:bg-background-dark bg-cover bg-center overflow-hidden border border-slate-200 dark:border-border-dark"
+                    style={{
+                      backgroundImage: `url('${lawyer.documents.passport.uri}')`,
+                    }}
+                  >
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center backdrop-blur-[2px]">
+                      <button className="bg-white/20 backdrop-blur-md p-3 rounded-full text-white hover:bg-white/40 transition-colors shadow-lg border border-white/20">
+                        <MdZoomIn className="text-2xl" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="mt-3 flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                        Passport / National ID
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        {lawyer.documents.passport.name}
+                      </p>
+                    </div>
+                    <MdVerified className="text-green-500 text-xl" />
                   </div>
                 </div>
-                <div className="mt-3 flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                      Passport - Front
-                    </p>
-                    <p className="text-xs text-slate-500">
-                      JPEG, 2.4MB • Valid until 2029
-                    </p>
+              )}
+              {lawyer.documents?.license && (
+                <div className="group relative">
+                  <div
+                    className="aspect-video w-full rounded-lg bg-slate-100 dark:bg-background-dark bg-cover bg-center overflow-hidden border border-slate-200 dark:border-border-dark"
+                    style={{
+                      backgroundImage: `url('${lawyer.documents.license.uri}')`,
+                    }}
+                  >
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center backdrop-blur-[2px]">
+                      <button className="bg-white/20 backdrop-blur-md p-3 rounded-full text-white hover:bg-white/40 transition-colors shadow-lg border border-white/20">
+                        <MdZoomIn className="text-2xl" />
+                      </button>
+                    </div>
                   </div>
-                  <MdVerified className="text-green-500 text-xl" />
-                </div>
-              </div>
-              <div className="group relative">
-                <div
-                  className="aspect-video w-full rounded-lg bg-slate-100 dark:bg-background-dark bg-cover bg-center overflow-hidden border border-slate-200 dark:border-border-dark"
-                  style={{
-                    backgroundImage:
-                      "url('https://lh3.googleusercontent.com/aida-public/AB6AXuAkApSoavaNrGQPVR9laCWWee29RKABlPjcPFm9r9U4lXzLMTqcFUcp4IK8vSAW_MJvFIBm7cGo91FpcRXXq4gXpO40lWjixJ1tqybqZiGPxqrZMcV6YN_3TJRfpYVNyVgJgX2E3T5ss1RLCLgxKIqcLXsqsFvVBG9-D8qNXjSwz7cQf0WlXOoCHJ5F9SP0-mxsaKLT4D0-FEgurAqtXzU_kAcDo68fhHhvCt-f8CqBPgk1DhqZUuBrc4xw3hCMof-smgMlYnqVn3R_')",
-                  }}
-                >
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center backdrop-blur-[2px]">
-                    <button className="bg-white/20 backdrop-blur-md p-3 rounded-full text-white hover:bg-white/40 transition-colors shadow-lg border border-white/20">
-                      <MdZoomIn className="text-2xl" />
-                    </button>
+                  <div className="mt-3 flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                        Driver's License
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        {lawyer.documents.license.name}
+                      </p>
+                    </div>
+                    <MdVerified className="text-green-500 text-xl" />
                   </div>
                 </div>
-                <div className="mt-3 flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                      Driver's License - Front
-                    </p>
-                    <p className="text-xs text-slate-500">
-                      PNG, 1.8MB • NY State ID
-                    </p>
-                  </div>
-                  <MdVerified className="text-green-500 text-xl" />
-                </div>
-              </div>
+              )}
             </div>
           </section>
 
@@ -287,58 +339,59 @@ const LawyerVerification = () => {
               </div>
             </div>
             <div className="divide-y divide-slate-100 dark:divide-border-dark">
-              {/* Certification Item 1 */}
-              <div className="p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
-                <div className="flex items-center gap-4">
-                  <div className="size-12 rounded-lg bg-red-100 dark:bg-red-900/20 text-red-600 flex items-center justify-center">
-                    <MdPictureAsPdf className="text-3xl" />
+              {lawyer.documents?.barCert && (
+                <div className="p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                  <div className="flex items-center gap-4">
+                    <div className="size-12 rounded-lg bg-red-100 dark:bg-red-900/20 text-red-600 flex items-center justify-center">
+                      <MdPictureAsPdf className="text-3xl" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                        Bar Membership Certificate
+                      </p>
+                      <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider mt-0.5">
+                        {lawyer.documents.barCert.name}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                      NY State Bar Membership Certificate
-                    </p>
-                    <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider mt-0.5">
-                      PDF • 1.2 MB • Issued Dec 2012
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-border-dark text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                    <MdFileDownload className="text-sm" /> Download
-                  </button>
-                  <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-bold hover:bg-primary/90 transition-colors shadow-sm shadow-primary/20">
-                    <MdVisibility className="text-sm" /> View
-                  </button>
-                </div>
-              </div>
-              {/* Certification Item 2 */}
-              <div className="p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
-                <div className="flex items-center gap-4">
-                  <div className="size-12 rounded-lg bg-red-100 dark:bg-red-900/20 text-red-600 flex items-center justify-center">
-                    <MdPictureAsPdf className="text-3xl" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                      Professional Indemnity Insurance (Active)
-                    </p>
-                    <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider mt-0.5">
-                      PDF • 850 KB • Expires June 2025
-                    </p>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => handleDocumentAction('barCert', 'download')} className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-border-dark text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                      <MdFileDownload className="text-sm" /> Download
+                    </button>
+                    <button onClick={() => handleDocumentAction('barCert', 'view')} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-bold hover:bg-primary/90 transition-colors shadow-sm shadow-primary/20">
+                      <MdVisibility className="text-sm" /> View
+                    </button>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-border-dark text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                    <MdFileDownload className="text-sm" /> Download
-                  </button>
-                  <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-bold hover:bg-primary/90 transition-colors shadow-sm shadow-primary/20">
-                    <MdVisibility className="text-sm" /> View
-                  </button>
+              )}
+              {lawyer.documents?.insurance && (
+                <div className="p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                  <div className="flex items-center gap-4">
+                    <div className="size-12 rounded-lg bg-red-100 dark:bg-red-900/20 text-red-600 flex items-center justify-center">
+                      <MdPictureAsPdf className="text-3xl" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                        Professional Indemnity Insurance
+                      </p>
+                      <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider mt-0.5">
+                        {lawyer.documents.insurance.name}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => handleDocumentAction('insurance', 'download')} className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-border-dark text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                      <MdFileDownload className="text-sm" /> Download
+                    </button>
+                    <button onClick={() => handleDocumentAction('insurance', 'view')} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-bold hover:bg-primary/90 transition-colors shadow-sm shadow-primary/20">
+                      <MdVisibility className="text-sm" /> View
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </section>
 
-          {/* Background Check Status */}
           <section className="bg-white dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-border-dark p-6 shadow-sm">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-2 text-primary">
@@ -347,7 +400,7 @@ const LawyerVerification = () => {
                   Background Check Status
                 </h2>
               </div>
-              <button className="text-primary text-xs font-bold flex items-center gap-1 hover:underline">
+              <button onClick={handleRunCheck} className="text-primary text-xs font-bold flex items-center gap-1 hover:underline">
                 Run New Check <MdRefresh className="text-sm" />
               </button>
             </div>
@@ -384,7 +437,6 @@ const LawyerVerification = () => {
         </div>
       </div>
 
-      {/* Persistent Action Bar */}
       <div className="fixed bottom-0 left-0 right-0 lg:left-64 z-[90] bg-white/80 dark:bg-background-dark/80 backdrop-blur-xl border-t border-slate-200 dark:border-border-dark p-4 shadow-2xl transition-all duration-300">
         <div className="max-w-[1440px] mx-auto flex flex-col md:flex-row items-center gap-6">
           <div className="flex-1 w-full">
@@ -394,19 +446,19 @@ const LawyerVerification = () => {
             ></textarea>
           </div>
           <div className="flex items-center gap-3 w-full md:w-auto">
-            <button 
+            <button
               onClick={() => handleAction("Pending Review")}
               className="flex-1 md:flex-none min-w-[140px] px-6 py-2.5 rounded-lg border border-slate-200 dark:border-border-dark text-sm font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-slate-600 dark:text-slate-300"
             >
               Request Revision
             </button>
-            <button 
+            <button
               onClick={() => handleAction("Rejected")}
               className="flex-1 md:flex-none min-w-[120px] px-6 py-2.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-bold shadow-lg shadow-red-600/20 transition-all"
             >
               Reject
             </button>
-            <button 
+            <button
               onClick={() => handleAction("Approved")}
               className="flex-1 md:flex-none min-w-[160px] px-8 py-2.5 rounded-lg bg-primary hover:bg-primary/90 text-white text-sm font-bold shadow-lg shadow-primary/20 transition-all"
             >

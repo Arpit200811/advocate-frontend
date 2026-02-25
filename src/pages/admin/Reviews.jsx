@@ -25,27 +25,87 @@ import {
   MdReport,
   MdArrowForward,
   MdClose,
+  MdDelete,
 } from "react-icons/md";
 import { useData } from "../../context/DataContext";
+import { exportToCSV } from "../../utils/exportHelper";
 
 const Reviews = () => {
-  const { reviews, updateReview } = useData();
+  const { reviews, updateReview, deleteReview, respondToReview } = useData();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedReview, setSelectedReview] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [activeMenu, setActiveMenu] = useState(null);
   const [filter, setFilter] = useState("Newest First");
+<<<<<<< HEAD
+=======
+  const [adminReplyText, setAdminReplyText] = useState("");
+
+  const handleDeleteReview = async (id) => {
+    const result = await Swal.fire({
+      title: 'Delete Review?',
+      text: "This action cannot be undone!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      confirmButtonText: 'Yes, delete it!'
+    });
+
+    if (result.isConfirmed) {
+      await deleteReview(id);
+      Swal.fire('Deleted!', 'The review has been removed.', 'success');
+    }
+  };
+>>>>>>> 30f6e99 (Admin Panel Enhancements: Integrated real-time promotions data, updated currency to INR, and refined dashboard analytics)
 
   const filteredReviews = reviews.filter(
     (review) =>
       review.lawyer.toLowerCase().includes(searchQuery.toLowerCase()) ||
       review.reviewer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       review.comment.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  ).sort((a, b) => {
+    // sort logic based on dropdown state
+    if (filter === "Highest Rated") return b.rating - a.rating;
+    if (filter === "Lowest Rated") return a.rating - b.rating;
+    if (filter === "Sentiment (Low to High)") {
+      const score = (s) => s === "Positive" ? 3 : s === "Neutral" ? 2 : 1;
+      return score(a.sentiment) - score(b.sentiment);
+    }
+    // Newest First fallback
+    return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime() || b.id.localeCompare(a.id);
+  });
+
+  const handleExport = () => {
+    const exportData = filteredReviews.map(r => ({
+      ID: r.caseId,
+      Lawyer: r.lawyer,
+      Reviewer: r.reviewer.name,
+      Rating: r.rating,
+      Sentiment: r.sentiment,
+      Date: r.timestamp,
+      Comment: r.comment
+    }));
+    exportToCSV(exportData, `reviews_export_${new Date().toISOString().split('T')[0]}.csv`);
+    Swal.fire({ title: "Exported!", text: "Reviews have been exported.", icon: "success", timer: 1500, showConfirmButton: false });
+  };
+
+  const handlePin = async (review) => {
+    const isPinned = review.isPinned ? false : true; // Assuming we add isPinned to backend or state
+    await updateReview(review.id, { isPinned });
+    Swal.fire("Success", `Review has been ${isPinned ? 'pinned' : 'unpinned'}.`, "success");
+  };
 
   const handleRespond = (review) => {
     setSelectedReview(review);
+    setAdminReplyText(review.adminResponse || "");
     setShowModal(true);
+  };
+
+  const submitResponse = async () => {
+    if (!adminReplyText.trim()) return;
+    await respondToReview(selectedReview.id, adminReplyText);
+    setShowModal(false);
+    Swal.fire("Published!", "Your response has been saved.", "success");
   };
 
   return (
@@ -72,7 +132,7 @@ const Reviews = () => {
             <MdNotifications className="text-2xl" />
             <span className="absolute top-2 right-2 size-2 bg-red-500 rounded-full border-2 border-white dark:border-background-dark"></span>
           </button>
-          <button className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors">
+          <button onClick={handleExport} className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors">
             <MdFileDownload className="text-xl" />
             Export Report
           </button>
@@ -140,7 +200,11 @@ const Reviews = () => {
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white">Moderation Queue</h3>
                 <div className="flex gap-2">
                   <div className="relative">
+<<<<<<< HEAD
                     <button 
+=======
+                    <button
+>>>>>>> 30f6e99 (Admin Panel Enhancements: Integrated real-time promotions data, updated currency to INR, and refined dashboard analytics)
                       onClick={() => setActiveMenu(activeMenu === 'filter' ? null : 'filter')}
                       className={`flex items-center gap-2 bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark text-xs font-medium rounded-lg px-3 py-1.5 focus:ring-primary outline-none transition-all ${activeMenu === 'filter' ? 'border-primary text-primary' : 'text-slate-700 dark:text-slate-300'}`}
                     >
@@ -150,9 +214,15 @@ const Reviews = () => {
                     {activeMenu === 'filter' && (
                       <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark rounded-xl shadow-2xl z-[80] p-1 animate-in fade-in slide-in-from-top-1 duration-200">
                         {['Newest First', 'Highest Rated', 'Lowest Rated', 'Sentiment (Low to High)'].map(opt => (
+<<<<<<< HEAD
                           <button 
                             key={opt}
                             onClick={() => {setFilter(opt); setActiveMenu(null);}}
+=======
+                          <button
+                            key={opt}
+                            onClick={() => { setFilter(opt); setActiveMenu(null); }}
+>>>>>>> 30f6e99 (Admin Panel Enhancements: Integrated real-time promotions data, updated currency to INR, and refined dashboard analytics)
                             className="w-full text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-background-dark rounded-lg transition-colors"
                           >
                             {opt}
@@ -190,20 +260,25 @@ const Reviews = () => {
                     </div>
                     <div className="flex flex-col items-end gap-2 text-right">
                       <span className="text-xs text-slate-400 font-medium">{review.timestamp}</span>
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                        review.sentiment.includes('Positive') ? 'bg-emerald-500/10 text-emerald-500' : 
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${review.sentiment.includes('Positive') ? 'bg-emerald-500/10 text-emerald-500' :
                         review.sentiment.includes('Negative') ? 'bg-rose-500/10 text-rose-500' : 'bg-amber-500/10 text-amber-500'
-                      }`}>
+                        }`}>
                         {review.sentiment}
                       </span>
                     </div>
                   </div>
-                  <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-300 mb-6 font-medium">
+                  <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-300 mb-4 font-medium">
                     "{review.comment}"
                   </p>
+                  {review.adminResponse && (
+                    <div className="mb-6 p-4 bg-primary/5 border-l-4 border-primary rounded-r-xl">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-1">Admin Response</p>
+                      <p className="text-xs text-slate-600 dark:text-slate-400 italic">"{review.adminResponse}"</p>
+                    </div>
+                  )}
                   <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-700/50">
                     <div className="flex gap-2">
-                      <button 
+                      <button
                         onClick={() => {
                           const action = review.flagged ? "Unflag" : "Flag";
                           Swal.fire({
@@ -220,36 +295,27 @@ const Reviews = () => {
                             }
                           });
                         }}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors ${
-                          review.flagged ? 'border-red-200 text-rose-500 bg-rose-500/5' : 'border-slate-200 dark:border-border-dark text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'
-                        }`}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors ${review.flagged ? 'border-red-200 text-rose-500 bg-rose-500/5' : 'border-slate-200 dark:border-border-dark text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'
+                          }`}
                       >
                         {review.flagged ? <MdReport className="text-sm" /> : <MdFlag className="text-sm" />}
                         {review.flagged ? 'Flagged' : 'Flag'}
                       </button>
-                      <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-border-dark text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-slate-600 dark:text-slate-400">
-                        <MdPushPin className="text-sm" /> Pin
+                      <button onClick={() => handlePin(review)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors ${review.isPinned ? 'border-primary text-primary' : 'border-slate-200 dark:border-border-dark text-slate-600 dark:text-slate-400'}`}>
+                        <MdPushPin className="text-sm" /> {review.isPinned ? "Unpin" : "Pin"}
+                      </button>
+                      <button
+                        onClick={() => handleDeleteReview(review.id)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-border-dark text-xs font-semibold hover:bg-rose-50 dark:hover:bg-rose-500/10 hover:text-rose-500 transition-colors text-slate-600 dark:text-slate-400"
+                      >
+                        <MdDelete className="text-sm" /> Delete
                       </button>
                     </div>
-                    <button 
-                      onClick={() => {
-                        Swal.fire({
-                          title: `Respond to ${review.reviewer.name}`,
-                          input: "textarea",
-                          inputPlaceholder: "Type your response here...",
-                          showCancelButton: true,
-                          confirmButtonColor: "#197fe6",
-                          confirmButtonText: "Send Response",
-                        }).then((result) => {
-                          if (result.isConfirmed) {
-                            updateReview(review.id, { response: result.value });
-                            Swal.fire("Sent!", "Your response has been published.", "success");
-                          }
-                        });
-                      }}
+                    <button
+                      onClick={() => handleRespond(review)}
                       className="bg-primary text-white px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-primary/90 transition-colors shadow-md shadow-primary/20"
                     >
-                      Respond as Admin
+                      {review.adminResponse ? "Edit Response" : "Respond as Admin"}
                     </button>
                   </div>
                 </div>
@@ -334,7 +400,7 @@ const Reviews = () => {
               </div>
             </div>
           </div>
-          
+
           <footer className="mt-8 py-8 text-center border-t border-slate-100 dark:border-border-dark">
             <p className="text-xs text-slate-500 dark:text-slate-500 font-medium uppercase tracking-widest">© 2026 LegalAdmin Platform. Data analysis updated 4 minutes ago.</p>
           </footer>
@@ -347,10 +413,10 @@ const Reviews = () => {
           <div className="bg-white dark:bg-surface-dark w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 dark:border-border-dark overflow-hidden animate-in zoom-in-95 duration-300">
             <div className="p-6 border-b border-slate-100 dark:border-border-dark flex justify-between items-center">
               <h3 className="font-bold text-lg text-slate-900 dark:text-white">Respond to {selectedReview.reviewer.name}</h3>
-              <button 
+              <button
                 onClick={() => setShowModal(false)}
                 className="hover:bg-slate-100 dark:hover:bg-background-dark p-1 rounded-full transition-colors"
-               >
+              >
                 <MdClose className="text-2xl text-slate-400 hover:text-rose-500" />
               </button>
             </div>
@@ -360,29 +426,34 @@ const Reviews = () => {
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Your Response</label>
-                <textarea 
+                <textarea
                   className="w-full bg-slate-100 dark:bg-background-dark border-none rounded-xl p-4 text-sm focus:ring-2 focus:ring-primary h-32 outline-none transition-all text-slate-900 dark:text-white"
                   placeholder="Draft a polite and professional response..."
+                  value={adminReplyText}
+                  onChange={(e) => setAdminReplyText(e.target.value)}
                 ></textarea>
               </div>
               <div className="flex items-center gap-2">
-                <input 
-                  className="rounded text-primary focus:ring-primary bg-transparent border-slate-300 size-4 transition-all" 
-                  id="email-user" 
-                  type="checkbox" 
+                <input
+                  className="rounded text-primary focus:ring-primary bg-transparent border-slate-300 size-4 transition-all"
+                  id="email-user"
+                  type="checkbox"
                   defaultChecked
                 />
                 <label className="text-xs font-semibold text-slate-500 cursor-pointer" htmlFor="email-user">Also send copy to user via email</label>
               </div>
             </div>
             <div className="p-6 bg-slate-50 dark:bg-background-dark/50 flex justify-end gap-3">
-              <button 
+              <button
                 onClick={() => setShowModal(false)}
                 className="px-6 py-2 rounded-lg text-sm font-bold text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors uppercase tracking-widest"
               >
                 Cancel
               </button>
-              <button className="px-6 py-2 rounded-lg text-sm font-bold bg-primary text-white hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 uppercase tracking-widest">
+              <button
+                onClick={submitResponse}
+                className="px-6 py-2 rounded-lg text-sm font-bold bg-primary text-white hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 uppercase tracking-widest"
+              >
                 Publish Response
               </button>
             </div>

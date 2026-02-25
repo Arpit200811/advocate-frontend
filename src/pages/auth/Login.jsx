@@ -1,4 +1,7 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import api from "../../services/api";
+import Swal from "sweetalert2";
 import {
   MdSecurity,
   MdVisibility,
@@ -8,6 +11,45 @@ import {
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const response = await api.post("/auth/login", { email, password });
+      const { accessToken, user } = response.data;
+
+      if (user.role !== "admin") {
+        throw new Error("Access denied. Admin only.");
+      }
+
+      localStorage.setItem("adminToken", accessToken);
+      localStorage.setItem("adminUser", JSON.stringify(user));
+
+      Swal.fire({
+        title: "Welcome Admin",
+        text: "Redirecting to dashboard...",
+        icon: "success",
+        timer: 1500,
+        showConfirmButton: false,
+      }).then(() => {
+        navigate("/admin/dashboard");
+      });
+    } catch (error) {
+      Swal.fire({
+        title: "Login Failed",
+        text: error.response?.data?.message || error.message,
+        icon: "error",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="bg-background-light dark:bg-background-dark min-h-screen flex flex-col font-display">
@@ -55,7 +97,7 @@ const Login = () => {
                 Secure access for managing users, lawyers, and payments.
               </p>
 
-              <form className="flex flex-col gap-5">
+              <form onSubmit={handleSubmit} className="flex flex-col gap-5">
                 {/* Email */}
                 <div className="flex flex-col gap-2">
                   <label className="text-base font-medium text-[#111418] dark:text-gray-200">
@@ -63,6 +105,9 @@ const Login = () => {
                   </label>
                   <input
                     type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
                     placeholder="e.g. admin@legalconsult.com"
                     className="form-input h-14 rounded-lg border border-[#dce0e5] dark:border-gray-700 bg-white dark:bg-gray-800 text-[#111418] dark:text-white focus:ring-primary"
                   />
@@ -82,6 +127,9 @@ const Login = () => {
                   <div className="relative">
                     <input
                       type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
                       placeholder="••••••••"
                       className="form-input h-14 w-full rounded-lg border border-[#dce0e5] dark:border-gray-700 bg-white dark:bg-gray-800 text-[#111418] dark:text-white pr-12 focus:ring-primary"
                     />
@@ -100,8 +148,11 @@ const Login = () => {
                 </div>
 
                 {/* Submit */}
-                <button className="h-14 bg-primary text-white font-bold rounded-lg hover:bg-[#156bc2] transition-colors shadow-md">
-                  Sign In
+                <button
+                  disabled={loading}
+                  className="h-14 bg-primary text-white font-bold rounded-lg hover:bg-[#156bc2] transition-colors shadow-md disabled:opacity-50"
+                >
+                  {loading ? "Signing In..." : "Sign In"}
                 </button>
               </form>
             </div>

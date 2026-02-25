@@ -25,6 +25,7 @@ import Categories from "./pages/admin/Categories";
 import Reviews from "./pages/admin/Reviews";
 import BulkPayout from "./pages/admin/BulkPayout";
 import AdminLayout from "./layouts/AdminLayout";
+import ProtectedRoute from "./layouts/ProtectedRoute";
 import NotFound from "./pages/error/NotFound";
 
 function App() {
@@ -41,26 +42,29 @@ function App() {
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/2fa" element={<TwoFactorAuth />} />
-        <Route path="/admin" element={<AdminLayout />}>
-          <Route path="dashboard" element={<Dashboard />} />
-          <Route path="users" element={<Users />} />
-          <Route path="lawyers" element={<Lawyers />} />
-          <Route path="lawyers/queue" element={<VerificationQueue />} />
-          <Route path="lawyers/verify/:id" element={<LawyerVerification />} />
-          <Route path="settings" element={<Settings />} />
-          <Route path="settings/notifications" element={<NotificationSettings />} />
-          <Route path="consultations" element={<Consultations />} />
-          <Route path="payments" element={<Payments />} />
-          <Route path="payouts" element={<Payouts />} />
-          <Route path="disputes" element={<Disputes />} />
-          <Route path="analytics" element={<Analytics />} />
-          <Route path="notifications" element={<Notifications />} />
-          <Route path="promotions" element={<Promotions />} />
-          <Route path="promotions/create" element={<CreateOffer />} />
-          <Route path="referrals" element={<Referrals />} />
-          <Route path="categories" element={<Categories />} />
-          <Route path="reviews" element={<Reviews />} />
-          <Route path="payouts/bulk" element={<BulkPayout />} />
+
+        <Route element={<ProtectedRoute />}>
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="users" element={<Users />} />
+            <Route path="lawyers" element={<Lawyers />} />
+            <Route path="lawyers/queue" element={<VerificationQueue />} />
+            <Route path="lawyers/verify/:id" element={<LawyerVerification />} />
+            <Route path="settings" element={<Settings />} />
+            <Route path="settings/notifications" element={<NotificationSettings />} />
+            <Route path="consultations" element={<Consultations />} />
+            <Route path="payments" element={<Payments />} />
+            <Route path="payouts" element={<Payouts />} />
+            <Route path="disputes" element={<Disputes />} />
+            <Route path="analytics" element={<Analytics />} />
+            <Route path="notifications" element={<Notifications />} />
+            <Route path="promotions" element={<Promotions />} />
+            <Route path="promotions/create" element={<CreateOffer />} />
+            <Route path="referrals" element={<Referrals />} />
+            <Route path="categories" element={<Categories />} />
+            <Route path="reviews" element={<Reviews />} />
+            <Route path="payouts/bulk" element={<BulkPayout />} />
+          </Route>
         </Route>
         <Route path="*" element={<NotFound />} />
       </Routes>

@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Swal from "sweetalert2";
+import api from "../../services/api";
 
 import {
   MdPayments,
@@ -17,9 +18,10 @@ import {
   MdChevronRight,
 } from "react-icons/md";
 import { useData } from "../../context/DataContext";
+import { exportToCSV } from "../../utils/exportHelper";
 
 const Payments = () => {
-  const { payments, setPayments } = useData();
+  const { payments, setPayments, refundPayment } = useData();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
@@ -37,9 +39,7 @@ const Payments = () => {
       confirmButtonText: "Yes, Process Refund",
     }).then((result) => {
       if (result.isConfirmed) {
-        setPayments((prev) =>
-          prev.map((p) => (p.id === id ? { ...p, status: "Refunded" } : p))
-        );
+        refundPayment(id);
         Swal.fire({
           title: "Refund Processed",
           text: "The transaction has been successfully refunded.",
@@ -53,10 +53,10 @@ const Payments = () => {
 
   const filteredPayments = payments.filter((payment) => {
     const matchesSearch =
-      payment.user.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      payment.lawyer.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      payment.id.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === "All" || payment.status === statusFilter;
+      (payment.user || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (payment.lawyer || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (payment.id || "").toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = statusFilter === "All" || payment.status === statusFilter || (statusFilter === "Refunded" && payment.status === "Refunded");
     return matchesSearch && matchesStatus;
   });
 
@@ -66,44 +66,53 @@ const Payments = () => {
     currentPage * rowsPerPage
   );
 
-  const grossRevenue = payments.reduce((acc, curr) => {
-    const val = parseFloat(curr.amount.replace('$', '').replace(',', '')) || 0;
-    return acc + val;
-  }, 0);
+  const [stats, setStats] = useState({
+    grossRevenue: 0,
+    platformComm: 0,
+    pendingClearance: 0,
+    failureRate: "0.00",
+  });
 
-  const platformComm = grossRevenue * 0.15;
-  const pendingClearance = payments.filter(p => p.status === 'Pending').length * 350; // Mock calculation
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const { data } = await api.get('/admin/payments/stats');
+        setStats(data);
+      } catch (err) {
+        console.error("Error fetching payment stats", err);
+      }
+    };
+    fetchStats();
+  }, []);
+
+  const grossRevenue = stats.grossRevenue;
+  const platformComm = stats.platformComm;
+  const pendingClearance = stats.pendingClearance;
+  const failureRate = stats.failureRate;
 
   const handleExportCSV = () => {
-    const headers = ["ID", "User", "Lawyer", "Amount", "Status", "Date"];
-    const csvContent = [
-      headers.join(","),
-      ...filteredPayments.map(p => `${p.id},${p.user},${p.lawyer},${p.amount},${p.status},${p.date}`)
-    ].join("\n");
-    
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", `payments_export_${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
+    const exportData = filteredPayments.map(p => ({
+      TransactionID: p.id,
+      User: p.user,
+      Lawyer: p.lawyer,
+      Amount: p.amount,
+      Status: p.status,
+      Date: p.date
+    }));
+
+    exportToCSV(exportData, `payments_export_${new Date().toISOString().split('T')[0]}.csv`);
+
     Swal.fire({
       title: "Exported!",
       text: `${filteredPayments.length} transactions exported to CSV.`,
       icon: "success",
       timer: 1500,
       showConfirmButton: false,
-      confirmButtonColor: "#197fe6"
     });
   };
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      {/* Header & High-Level Stats */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
           <p className="text-sm font-semibold text-primary mb-1 uppercase tracking-widest">
@@ -117,7 +126,7 @@ const Payments = () => {
           </p>
         </div>
         <div className="flex gap-3">
-          <button 
+          <button
             onClick={handleExportCSV}
             className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-[#1c1c27] border border-slate-200 dark:border-[#3d3b54] rounded-lg text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-[#2a2839] transition-colors shadow-sm"
           >
@@ -127,33 +136,32 @@ const Payments = () => {
         </div>
       </div>
 
-      {/* KPI Overviews */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
           {
             label: "Gross Revenue",
-            value: `$${grossRevenue.toLocaleString()}`,
+            value: `₹${grossRevenue.toLocaleString('en-IN')}`,
             trend: "+12.5%",
             icon: MdPayments,
             color: "primary",
           },
           {
             label: "Platform Comm.",
-            value: `$${platformComm.toLocaleString()}`,
+            value: `₹${platformComm.toLocaleString('en-IN')}`,
             trend: "15% fixed rate",
             icon: MdTrendingUp,
             color: "emerald",
           },
           {
             label: "Pending Clearance",
-            value: `$${pendingClearance.toLocaleString()}`,
+            value: `₹${pendingClearance.toLocaleString('en-IN')}`,
             trend: `${payments.filter(p => p.status === 'Pending').length} transactions`,
             icon: MdHistory,
             color: "amber",
           },
           {
             label: "Failure Rate",
-            value: "0.84%",
+            value: `${failureRate}%`,
             trend: "-0.2% improvement",
             icon: MdSettings,
             color: "rose",
@@ -165,15 +173,14 @@ const Payments = () => {
           >
             <div className="flex justify-between items-start mb-4">
               <div
-                className={`p-2 rounded-lg ${
-                  kpi.color === "primary"
-                    ? "bg-primary/10 text-primary"
-                    : kpi.color === "emerald"
+                className={`p-2 rounded-lg ${kpi.color === "primary"
+                  ? "bg-primary/10 text-primary"
+                  : kpi.color === "emerald"
                     ? "bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
                     : kpi.color === "amber"
-                    ? "bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400"
-                    : "bg-rose-100 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400"
-                }`}
+                      ? "bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                      : "bg-rose-100 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400"
+                  }`}
               >
                 <kpi.icon className="text-2xl" />
               </div>
@@ -192,7 +199,6 @@ const Payments = () => {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
-        {/* Main Transaction Feed */}
         <div className="xl:col-span-12 space-y-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-4">
             <h3 className="text-lg font-bold text-slate-900 dark:text-white">Transaction History</h3>
@@ -221,6 +227,7 @@ const Payments = () => {
                 <option value="All">All Status</option>
                 <option value="Successful">Successful</option>
                 <option value="Failed">Failed</option>
+                <option value="Refunded">Refunded</option>
               </select>
             </div>
           </div>
@@ -278,11 +285,10 @@ const Payments = () => {
                         </td>
                         <td className="px-6 py-4">
                           <span
-                            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${
-                              payment.status === "Successful"
-                                ? "bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-400 border-green-200 dark:border-green-500/20"
-                                : "bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-400 border-red-200 dark:border-red-500/20"
-                            }`}
+                            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${payment.status === "Successful"
+                              ? "bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-400 border-green-200 dark:border-green-500/20"
+                              : "bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-400 border-red-200 dark:border-red-500/20"
+                              }`}
                           >
                             {payment.status === "Successful" ? (
                               <MdCheckCircle />
@@ -300,7 +306,7 @@ const Payments = () => {
                             <button className="p-1.5 bg-slate-100 dark:bg-[#2a2839] rounded-lg text-slate-500 hover:text-primary transition-colors">
                               <MdHistory className="text-lg" />
                             </button>
-                            <button 
+                            <button
                               onClick={() => handleRefund(payment.id)}
                               className="p-1.5 bg-slate-100 dark:bg-[#2a2839] rounded-lg text-slate-500 hover:text-red-500 transition-colors font-bold text-xs uppercase"
                             >
@@ -316,12 +322,6 @@ const Payments = () => {
                         <div className="flex flex-col items-center justify-center opacity-40">
                           <MdSearchOff className="text-6xl text-slate-300 dark:text-[#3d3b54] mb-4" />
                           <p className="text-sm font-black uppercase tracking-[0.2em] text-slate-500">No transactions found</p>
-                          <button 
-                            onClick={() => {setSearchQuery(""); setStatusFilter("All");}}
-                            className="mt-4 text-xs font-bold text-primary hover:underline"
-                          >
-                            Reset filters
-                          </button>
                         </div>
                       </td>
                     </tr>
@@ -330,11 +330,10 @@ const Payments = () => {
               </table>
             </div>
 
-            {/* Pagination */}
             <div className="p-4 bg-slate-50 dark:bg-[#252533] border-t border-slate-200 dark:border-[#3d3b54] flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-black uppercase text-slate-500 dark:text-[#9f9db9] tracking-widest">Rows:</span>
-                <select 
+                <select
                   value={rowsPerPage}
                   onChange={(e) => {
                     setRowsPerPage(Number(e.target.value));
@@ -352,14 +351,14 @@ const Payments = () => {
                   Page {currentPage} of {totalPages || 1}
                 </span>
                 <div className="flex gap-1">
-                  <button 
+                  <button
                     onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                    className="p-1 hover:bg-slate-200 dark:hover:bg-[#3d3b54] rounded-md transition-colors disabled:opacity-30 text-slate-400" 
+                    className="p-1 hover:bg-slate-200 dark:hover:bg-[#3d3b54] rounded-md transition-colors disabled:opacity-30 text-slate-400"
                     disabled={currentPage === 1}
                   >
                     <MdChevronLeft className="text-2xl" />
                   </button>
-                  <button 
+                  <button
                     onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                     className="p-1 hover:bg-slate-200 dark:hover:bg-[#3d3b54] rounded-md transition-colors disabled:opacity-30 text-slate-600 dark:text-slate-300"
                     disabled={currentPage === totalPages || totalPages === 0}

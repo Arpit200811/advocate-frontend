@@ -22,12 +22,15 @@ import { useData } from "../../context/DataContext";
 
 const BulkPayout = () => {
   const navigate = useNavigate();
-  const { bulkPayouts, setBulkPayouts, setPayouts } = useData();
+  const { bulkPayouts, processBulkPayouts } = useData();
   const [manifest, setManifest] = useState(bulkPayouts);
   const [confirmed, setConfirmed] = useState(false);
 
-  const subtotal = manifest.reduce((acc, curr) => acc + curr.amount, 0);
-  const totalFees = manifest.reduce((acc, curr) => acc + curr.fee, 0);
+  const subtotal = manifest.reduce((acc, curr) => {
+    const amount = Number(curr.amount?.toString().replace(/[^0-9.-]+/g, "")) || 0;
+    return acc + amount;
+  }, 0);
+  const totalFees = manifest.length * 2;
   const totalDebit = subtotal + totalFees;
 
   return (
@@ -48,9 +51,9 @@ const BulkPayout = () => {
               <div className="text-[#9f9db9] flex items-center justify-center pl-4">
                 <MdSearch className="text-xl" />
               </div>
-              <input 
-                className="flex w-full min-w-0 flex-1 border-none bg-transparent focus:outline-0 focus:ring-0 text-slate-900 dark:text-white placeholder:text-[#9f9db9] px-4 text-sm font-normal" 
-                placeholder="Search transactions..." 
+              <input
+                className="flex w-full min-w-0 flex-1 border-none bg-transparent focus:outline-0 focus:ring-0 text-slate-900 dark:text-white placeholder:text-[#9f9db9] px-4 text-sm font-normal"
+                placeholder="Search transactions..."
               />
             </div>
           </div>
@@ -70,7 +73,7 @@ const BulkPayout = () => {
               <MdSettings className="text-xl" />
             </button>
           </div>
-          <div 
+          <div
             className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 border-2 border-primary shadow-sm"
             style={{ backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuDbjoD5hKPSRl4yzYyzhNqxVQ__1gt47hd3sdj5gOofoBEW0dyVPdA1S7GIPni4KeFzTjkZCnJGAAxNRbZejKUEPfZxR_67g6bD5sH8XvbYwAW_ogfAEDRRkvVRpAEvM_Bg0kPhapvrzwNzf3rkd-_6XyZvdsA8ajFgBAguXgHDkuk9vOSIOfKYkku_iXtm83qZS3TRuLdgqvFgz05k9BkpojZ9QlgK9mTvxdUO8QcXmWPGX6oJp-0hsM6U2VCMhXbYw7BQqPTAPB_v")' }}
           ></div>
@@ -121,8 +124,8 @@ const BulkPayout = () => {
                 <p className="text-xs font-black uppercase tracking-[0.15em]">Total Disbursement</p>
                 <MdAccountBalanceWallet className="text-2xl text-primary" />
               </div>
-              <p className="text-slate-900 dark:text-white text-3xl font-black tabular-nums">${subtotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
-              <p className="text-slate-400 dark:text-[#9f9db9] text-[10px] font-bold italic tracking-wider">Currency: USD</p>
+              <p className="text-slate-900 dark:text-white text-3xl font-black tabular-nums">₹{subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
+              <p className="text-slate-400 dark:text-[#9f9db9] text-[10px] font-bold italic tracking-wider">Currency: INR</p>
             </div>
 
             <div className="flex flex-col gap-3 rounded-2xl p-6 bg-white dark:bg-[#1c1c27] border border-slate-200 dark:border-[#3d3b54] shadow-sm group hover:border-primary/30 transition-all">
@@ -130,7 +133,7 @@ const BulkPayout = () => {
                 <p className="text-xs font-black uppercase tracking-[0.15em]">Transaction Fees</p>
                 <MdReceiptLong className="text-2xl text-primary" />
               </div>
-              <p className="text-slate-900 dark:text-white text-3xl font-black tabular-nums">${totalFees.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+              <p className="text-slate-900 dark:text-white text-3xl font-black tabular-nums">₹{totalFees.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
               <p className="text-slate-400 dark:text-[#9f9db9] text-[10px] font-bold italic tracking-wider">Processing costs included</p>
             </div>
           </div>
@@ -164,9 +167,8 @@ const BulkPayout = () => {
                     <tr key={payout.id} className={`group hover:bg-slate-50 dark:hover:bg-[#2a2839] transition-all ${payout.status === 'INVALID' ? 'bg-rose-500/5' : ''}`}>
                       <td className="px-8 py-5">
                         <div className="flex items-center gap-4">
-                          <div className={`size-9 rounded-full flex items-center justify-center font-black text-xs shadow-sm ${
-                            payout.status === 'INVALID' ? 'bg-rose-500/10 text-rose-500' : 'bg-primary/10 text-primary'
-                          }`}>
+                          <div className={`size-9 rounded-full flex items-center justify-center font-black text-xs shadow-sm ${payout.status === 'INVALID' ? 'bg-rose-500/10 text-rose-500' : 'bg-primary/10 text-primary'
+                            }`}>
                             {payout.initials}
                           </div>
                           <span className="text-slate-900 dark:text-white font-bold text-sm tracking-tight">{payout.name}</span>
@@ -175,28 +177,26 @@ const BulkPayout = () => {
                       <td className="px-8 py-5 text-slate-500 dark:text-[#9f9db9] text-xs font-bold tracking-tight">{payout.legalId}</td>
                       <td className="px-8 py-5">
                         <div className="flex items-center gap-2 text-slate-500 dark:text-[#9f9db9] text-xs font-bold">
-                          {payout.method === 'Stripe Connect' ? <MdCreditCard className="text-lg text-primary" /> : 
-                           payout.method === 'Bank Transfer' ? <MdAccountBalance className="text-lg text-emerald-500" /> : <MdPayments className="text-lg text-blue-500" />}
+                          {payout.method === 'Stripe Connect' ? <MdCreditCard className="text-lg text-primary" /> :
+                            payout.method === 'Bank Transfer' ? <MdAccountBalance className="text-lg text-emerald-500" /> : <MdPayments className="text-lg text-blue-500" />}
                           {payout.method}
                         </div>
                       </td>
-                      <td className="px-8 py-5 text-right text-slate-900 dark:text-white font-black text-sm tabular-nums">${payout.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
-                      <td className="px-8 py-5 text-right text-slate-500 dark:text-[#9f9db9] text-xs font-bold tabular-nums">${payout.fee.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                      <td className="px-8 py-5 text-right text-slate-900 dark:text-white font-black text-sm tabular-nums">₹{payout.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                      <td className="px-8 py-5 text-right text-slate-500 dark:text-[#9f9db9] text-xs font-bold tabular-nums">₹{payout.fee.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                       <td className="px-8 py-5">
                         <div className="flex justify-center">
-                          <span className={`px-4 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase ring-1 ${
-                            payout.status === 'READY' 
-                              ? 'bg-emerald-500/10 text-emerald-500 ring-emerald-500/20' 
-                              : 'bg-rose-500/10 text-rose-500 ring-rose-500/20'
-                          }`}>
+                          <span className={`px-4 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase ring-1 ${payout.status === 'READY'
+                            ? 'bg-emerald-500/10 text-emerald-500 ring-emerald-500/20'
+                            : 'bg-rose-500/10 text-rose-500 ring-rose-500/20'
+                            }`}>
                             {payout.status === 'INVALID' ? 'Invalid Account' : payout.status}
                           </span>
                         </div>
                       </td>
                       <td className="px-8 py-5 text-right">
-                        <button className={`text-[10px] font-black uppercase tracking-widest hover:underline transition-all ${
-                          payout.status === 'INVALID' ? 'text-rose-500 hover:text-rose-600' : 'text-primary hover:text-primary/70'
-                        }`}>
+                        <button className={`text-[10px] font-black uppercase tracking-widest hover:underline transition-all ${payout.status === 'INVALID' ? 'text-rose-500 hover:text-rose-600' : 'text-primary hover:text-primary/70'
+                          }`}>
                           {payout.status === 'INVALID' ? 'Fix Account' : 'Edit'}
                         </button>
                       </td>
@@ -225,21 +225,20 @@ const BulkPayout = () => {
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-[#9f9db9]">Authorized Admin</label>
-                  <input 
-                    className="w-full bg-slate-100 dark:bg-[#121118] border-slate-200 dark:border-[#3d3b54] rounded-xl px-4 py-3 text-sm font-bold text-slate-400 dark:text-[#9f9db9] cursor-not-allowed opacity-70" 
-                    disabled 
-                    type="text" 
+                  <input
+                    className="w-full bg-slate-100 dark:bg-[#121118] border-slate-200 dark:border-[#3d3b54] rounded-xl px-4 py-3 text-sm font-bold text-slate-400 dark:text-[#9f9db9] cursor-not-allowed opacity-70"
+                    disabled
+                    type="text"
                     defaultValue="Admin-User-102"
                   />
                 </div>
               </div>
               <div className="mt-8 p-6 rounded-2xl bg-primary/5 border border-primary/20 transition-all hover:bg-primary/10">
                 <label className="flex items-start gap-4 cursor-pointer group">
-                  <div 
+                  <div
                     onClick={() => setConfirmed(!confirmed)}
-                    className={`mt-1 size-5 rounded border-2 shrink-0 transition-all flex items-center justify-center ${
-                      confirmed ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20' : 'bg-transparent border-slate-300 dark:border-[#3d3b54] group-hover:border-primary'
-                    }`}
+                    className={`mt-1 size-5 rounded border-2 shrink-0 transition-all flex items-center justify-center ${confirmed ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20' : 'bg-transparent border-slate-300 dark:border-[#3d3b54] group-hover:border-primary'
+                      }`}
                   >
                     {confirmed && <MdCheckCircle className="text-xs" />}
                   </div>
@@ -256,29 +255,29 @@ const BulkPayout = () => {
                 <div className="space-y-4">
                   <div className="flex justify-between text-xs font-bold transition-all group-hover:px-1">
                     <span className="text-slate-500 dark:text-[#9f9db9] uppercase tracking-wider">Subtotal</span>
-                    <span className="text-slate-900 dark:text-white tabular-nums">${subtotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                    <span className="text-slate-900 dark:text-white tabular-nums">₹{subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                   </div>
                   <div className="flex justify-between text-xs font-bold transition-all group-hover:px-1">
                     <span className="text-slate-500 dark:text-[#9f9db9] uppercase tracking-wider">Processing Fees</span>
-                    <span className="text-slate-900 dark:text-white tabular-nums">${totalFees.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                    <span className="text-slate-900 dark:text-white tabular-nums">₹{totalFees.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                   </div>
                   <div className="border-t border-slate-100 dark:border-[#3d3b54] pt-4 flex justify-between items-center transition-all group-hover:pt-6">
                     <span className="text-slate-900 dark:text-white text-[10px] font-black uppercase tracking-[0.2em]">Total Debit</span>
-                    <span className="text-primary text-2xl font-black tabular-nums tracking-tighter">${totalDebit.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                    <span className="text-primary text-2xl font-black tabular-nums tracking-tighter">₹{totalDebit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                   </div>
                 </div>
               </div>
-              <button 
+              <button
                 disabled={!confirmed}
                 onClick={() => {
                   Swal.fire({
                     title: "Execute Bulk Payout?",
-                    text: `Executing payment for ${manifest.length} lawyers totaling $${totalDebit.toLocaleString()}. This action is irreversible.`,
+                    text: `Executing payment for ${manifest.length} lawyers. This action is irreversible.`,
                     icon: "warning",
                     showCancelButton: true,
                     confirmButtonColor: "#197fe6",
                     confirmButtonText: "Execute Now",
-                  }).then((result) => {
+                  }).then(async (result) => {
                     if (result.isConfirmed) {
                       Swal.fire({
                         title: "Transmitting...",
@@ -286,9 +285,11 @@ const BulkPayout = () => {
                         allowOutsideClick: false,
                         didOpen: () => Swal.showLoading(),
                       });
-                      
-                      setTimeout(() => {
-                        // In a real app, we'd update state here
+
+                      try {
+                        const ids = manifest.map(p => p.id);
+                        await processBulkPayouts(ids);
+
                         Swal.fire({
                           title: "Batch Executed",
                           text: "All payouts have been successfully transmitted.",
@@ -296,15 +297,16 @@ const BulkPayout = () => {
                         }).then(() => {
                           navigate("/admin/payouts");
                         });
-                      }, 2000);
+                      } catch (error) {
+                        Swal.fire("Error", "Payout processing failed", "error");
+                      }
                     }
                   });
                 }}
-                className={`w-full mt-10 py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl transition-all active:scale-[0.98] ${
-                  confirmed 
-                    ? 'bg-primary text-white shadow-primary/30 hover:bg-primary/90' 
-                    : 'bg-slate-200 dark:bg-[#2a2839] text-slate-400 dark:text-slate-600 cursor-not-allowed grayscale'
-                }`}
+                className={`w-full mt-10 py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl transition-all active:scale-[0.98] ${confirmed
+                  ? 'bg-primary text-white shadow-primary/30 hover:bg-primary/90'
+                  : 'bg-slate-200 dark:bg-[#2a2839] text-slate-400 dark:text-slate-600 cursor-not-allowed grayscale'
+                  }`}
               >
                 CONFIRM & EXECUTE BATCH
               </button>

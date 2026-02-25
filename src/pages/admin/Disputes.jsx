@@ -16,7 +16,8 @@ import {
 import { useData } from "../../context/DataContext";
 
 const Disputes = () => {
-  const { disputes, setDisputes } = useData();
+  const { disputes, updateDispute, respondToDispute } = useData();
+  const [replyText, setReplyText] = useState("");
 
   const [selectedDisputeId, setSelectedDisputeId] = useState(disputes?.[0]?.id || null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -24,6 +25,13 @@ const Disputes = () => {
   const [statusFilter, setStatusFilter] = useState("All Status");
 
   const selectedDispute = disputes.find(d => d.id === selectedDisputeId) || disputes?.[0] || null;
+
+  const handleSendReply = async () => {
+    if (!replyText.trim()) return;
+    await respondToDispute(selectedDispute.id, replyText);
+    setReplyText("");
+    Swal.fire("Sent", "Response added to dispute log.", "success");
+  };
 
   const handleResolve = (id) => {
     Swal.fire({
@@ -35,9 +43,7 @@ const Disputes = () => {
       confirmButtonText: "Yes, Resolve",
     }).then((result) => {
       if (result.isConfirmed) {
-        setDisputes((prev) =>
-          prev.map((d) => (d.id === id ? { ...d, status: "Resolved" } : d))
-        );
+        updateDispute(id, { status: "Resolved" });
         Swal.fire("Success", "The case has been marked as resolved.", "success");
       }
     });
@@ -46,22 +52,20 @@ const Disputes = () => {
   const handleRefund = (id, amount) => {
     Swal.fire({
       title: "Issue Refund?",
-      text: `Confirm $${amount} refund for case ${id}. This will also mark the case as resolved.`,
+      text: `Confirm ${amount} refund for case ${id}. This will also mark the case as resolved.`,
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#ef4444",
       confirmButtonText: "Confirm Refund",
     }).then((result) => {
       if (result.isConfirmed) {
-        setDisputes((prev) =>
-          prev.map((d) => (d.id === id ? { ...d, status: "Resolved", refunded: true } : d))
-        );
+        updateDispute(id, { status: "Resolved", refunded: true });
         Swal.fire("Refunded", "Refund has been processed and case resolved.", "success");
       }
     });
   };
 
-  const filteredDisputes = disputes.filter(d => 
+  const filteredDisputes = disputes.filter(d =>
     d.user.toLowerCase().includes(searchQuery.toLowerCase()) ||
     d.lawyer.toLowerCase().includes(searchQuery.toLowerCase()) ||
     d.id.toLowerCase().includes(searchQuery.toLowerCase())
@@ -107,7 +111,11 @@ const Disputes = () => {
                 />
               </div>
               <div className="relative">
+<<<<<<< HEAD
                 <button 
+=======
+                <button
+>>>>>>> 30f6e99 (Admin Panel Enhancements: Integrated real-time promotions data, updated currency to INR, and refined dashboard analytics)
                   onClick={() => setActiveMenu(activeMenu === 'filter' ? null : 'filter')}
                   className={`p-2 rounded-lg border transition-all ${activeMenu === 'filter' ? 'bg-primary text-white border-primary' : 'bg-slate-50 dark:bg-background-dark text-slate-400 border-transparent hover:border-slate-300'}`}
                 >
@@ -116,9 +124,15 @@ const Disputes = () => {
                 {activeMenu === 'filter' && (
                   <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark rounded-xl shadow-2xl z-[80] p-1 animate-in fade-in slide-in-from-top-1 duration-200">
                     {['All Status', 'Pending', 'In Progress', 'Resolved'].map(opt => (
+<<<<<<< HEAD
                       <button 
                         key={opt}
                         onClick={() => {setStatusFilter(opt); setActiveMenu(null);}}
+=======
+                      <button
+                        key={opt}
+                        onClick={() => { setStatusFilter(opt); setActiveMenu(null); }}
+>>>>>>> 30f6e99 (Admin Panel Enhancements: Integrated real-time promotions data, updated currency to INR, and refined dashboard analytics)
                         className="w-full text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-background-dark rounded-lg transition-colors"
                       >
                         {opt}
@@ -134,15 +148,13 @@ const Disputes = () => {
               <button
                 key={dispute.id}
                 onClick={() => setSelectedDisputeId(dispute.id)}
-                className={`w-full text-left p-4 hover:bg-slate-50 dark:hover:bg-background-dark/30 transition-colors relative group ${
-                  selectedDisputeId === dispute.id ? "bg-primary/5 dark:bg-primary/10 border-r-4 border-primary" : ""
-                }`}
+                className={`w-full text-left p-4 hover:bg-slate-50 dark:hover:bg-background-dark/30 transition-colors relative group ${selectedDisputeId === dispute.id ? "bg-primary/5 dark:bg-primary/10 border-r-4 border-primary" : ""
+                  }`}
               >
                 <div className="flex justify-between items-start mb-1">
                   <span className="text-[10px] font-black text-slate-400 uppercase">{dispute.id}</span>
-                  <span className={`text-[10px] font-black uppercase ${
-                    dispute.priority === 'High' ? 'text-rose-500' : 'text-slate-400'
-                  }`}>
+                  <span className={`text-[10px] font-black uppercase ${dispute.priority === 'High' ? 'text-rose-500' : 'text-slate-400'
+                    }`}>
                     {dispute.priority} Priority
                   </span>
                 </div>
@@ -177,11 +189,10 @@ const Disputes = () => {
                 </div>
               </div>
               <div className="text-right">
-                <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${
-                  selectedDispute.status === 'Resolved' 
-                  ? 'bg-green-100 text-green-700 border-green-200' 
+                <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${selectedDispute.status === 'Resolved'
+                  ? 'bg-green-100 text-green-700 border-green-200'
                   : 'bg-amber-100 text-amber-700 border-amber-200'
-                }`}>
+                  }`}>
                   {selectedDispute.status}
                 </span>
                 <p className="text-xl font-black text-primary mt-2">{selectedDispute.amount}</p>
@@ -204,10 +215,42 @@ const Disputes = () => {
                       <MdAttachFile className="text-xl" />
                     </div>
                     <div>
-                      <p className="text-xs font-bold text-slate-900 dark:text-white">call_log_oct12.pd</p>
-                      <p className="text-[10px] text-slate-400 uppercase font-black">2.4 MB • PDF</p>
+                      <p className="text-xs font-bold text-slate-900 dark:text-white">case_evidence_1.pdf</p>
+                      <p className="text-[10px] text-slate-400 uppercase font-black">1.2 MB • PDF</p>
                     </div>
                   </div>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-[10px] font-black uppercase text-slate-400 tracking-[0.1em] mb-3">Case Correspondence</p>
+                <div className="space-y-3 max-h-[300px] overflow-y-auto mb-4 p-2 bg-slate-50 dark:bg-background-dark/30 rounded-xl">
+                  {(selectedDispute.messages || []).map((msg, idx) => (
+                    <div key={idx} className={`flex flex-col ${msg.sender === 'Admin' ? 'items-end' : 'items-start'}`}>
+                      <div className={`max-w-[80%] p-3 rounded-2xl text-xs ${msg.sender === 'Admin' ? 'bg-primary text-white rounded-tr-none' : 'bg-white dark:bg-background-dark text-slate-600 dark:text-slate-300 rounded-tl-none shadow-sm'}`}>
+                        {msg.text}
+                      </div>
+                      <span className="text-[9px] text-slate-400 mt-1 uppercase font-bold">{msg.sender} • {msg.time}</span>
+                    </div>
+                  ))}
+                  {(selectedDispute.messages || []).length === 0 && (
+                    <p className="text-center py-4 text-xs text-slate-400 italic">No messages logged for this case.</p>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={replyText}
+                    onChange={(e) => setReplyText(e.target.value)}
+                    placeholder="Type your response to the parties..."
+                    className="flex-1 bg-white dark:bg-background-dark border border-slate-200 dark:border-border-dark rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-primary/30 outline-none"
+                  />
+                  <button
+                    onClick={handleSendReply}
+                    className="px-4 py-2 bg-primary text-white rounded-xl font-bold text-xs hover:bg-primary/90 transition-all"
+                  >
+                    Send
+                  </button>
                 </div>
               </div>
             </div>
@@ -216,20 +259,16 @@ const Disputes = () => {
           <div className="bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark rounded-2xl p-6 shadow-sm">
             <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Final Resolution</h3>
             <div className="space-y-4">
-              <textarea 
-                className="w-full bg-slate-50 dark:bg-background-dark border-none rounded-xl p-4 text-sm focus:ring-2 focus:ring-primary/30 outline-none min-h-[100px] text-slate-900 dark:text-white placeholder:text-slate-400"
-                placeholder="Enter internal resolution notes..."
-              ></textarea>
               <div className="flex gap-3">
-                <button 
+                <button
                   onClick={() => handleResolve(selectedDispute.id)}
                   disabled={selectedDispute.status === "Resolved"}
-                  className="flex-1 bg-primary text-white font-bold py-3 rounded-xl hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="flex-1 bg-green-600 text-white font-bold py-3 rounded-xl hover:bg-green-700 transition-all shadow-lg shadow-green-600/20 flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   <MdCheckCircle className="text-xl" />
                   Resolve Case
                 </button>
-                <button 
+                <button
                   onClick={() => handleRefund(selectedDispute.id, selectedDispute.amount)}
                   disabled={selectedDispute.status === "Resolved"}
                   className="flex-1 bg-rose-500 text-white font-bold py-3 rounded-xl hover:bg-rose-600 transition-all shadow-lg shadow-rose-500/20 flex items-center justify-center gap-2 disabled:opacity-50"
@@ -242,7 +281,7 @@ const Disputes = () => {
           </div>
         </div>
       </div>
-    </div>
+    </div >
   );
 };
 

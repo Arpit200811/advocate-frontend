@@ -1,0 +1,119 @@
+import React, { useState } from "react";
+import Swal from "sweetalert2";
+import {
+  MdSearch,
+  MdDownload,
+  MdAdd,
+  MdTrendingUp,
+  MdTrendingDown,
+  MdExpandMore,
+  MdStar,
+  MdInsights,
+  MdMail,
+  MdMoreVert,
+  MdChevronLeft,
+  MdChevronRight,
+  MdPriorityHigh,
+  MdForum,
+  MdArrowForward,
+  MdSearchOff,
+  MdBarChart
+} from "react-icons/md";
+import { useData } from "../../context/DataContext";
+import { exportToCSV } from "../../utils/exportHelper";
+
+const Lawyers = () => {
+  const { lawyers, updateLawyer, onboardLawyer, sendMessage, categories } = useData();
+  const [activeFilter, setActiveFilter] = useState(null);
+  const [filters, setFilters] = useState({
+    availability: "All",
+    practiceArea: "Corporate",
+    rating: "4.5+",
+    earnings: "High to Low"
+  });
+  
+  const performanceReviews = [
+    {
+      id: 1,
+      name: "James Wilson",
+      avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuClpPCDGrIOAflCpZkjEiY2c26GlbUNBZ-QD3FRM2tFiggveX75C5i4z-CPIJxgEC_ZPEEE83e0kBqlS-TuNIyv3x0ZQ4y_e4ldgusBlhKE_weCY4V0YTFYYN2ShQ6HUedrruDZHtVGkekLoGvK8MOGNSbYmjtc1FRC0G5PUJELCJOE7VlILyPp2tFXsMJ3cLh6WR-7uakp-ZNl4UhnzGvv-ClVwMBb5Ie8H-FjNKAbdxWBudDwY3saMKnUlg5or7UPXkIO_rtxRLmO",
+      reason: "Rating dropped to 3.2",
+    },
+    {
+      id: 2,
+      name: "Linda Wu",
+      avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuBCb9nb53KEL91n2-aj2XZ2PPrrVvTV5dh_p7yH_MnZnTjDD8NEhgQqWgq2FDlV6m2zTBHpjGMgu45VYM9lsyrAjlbWp96dd6R9cCU0Q7fVg1bM6wfpvJSMstpQu5l-vFfQUcBacM8mmnwwBzmoWZQE0j5Dbhr8sqVGO03LFC2q8sKOAp-atzX4IDCjoStFc5coJc2GpBN3u7li61s1dFAugLIH5xH2At-_0Nf73xSBUj64l2j2pUS-BIuySkbdBYoCC0C7YkKKXhSJ",
+      reason: "High Dispute Rate (12%)",
+    },
+  ];
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  const filteredLawyers = lawyers.filter((lawyer) =>
+    String(lawyer.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+    String(lawyer.specialization || "").toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const totalPages = Math.ceil(filteredLawyers.length / rowsPerPage);
+  const paginatedLawyers = filteredLawyers.slice(
+    (currentPage - 1) * rowsPerPage,
+    currentPage * rowsPerPage
+  );
+
+  const handleExportCSV = () => {
+    const exportData = filteredLawyers.map(l => ({
+      ID: l.id,
+      Name: l.name,
+      Specialization: l.specialization,
+      Rating: l.rating,
+      Experience: l.experience,
+      Status: l.status,
+      Revenue: l.revenue
+    }));
+    
+    exportToCSV(exportData, `lawyers_export_${new Date().toISOString().split('T')[0]}.csv`);
+    
+    Swal.fire({
+      title: "Exported!",
+      text: `${filteredLawyers.length} lawyers exported to CSV.`,
+      icon: "success",
+      timer: 1500,
+      showConfirmButton: false
+    });
+  };
+
+  const showPerformance = (lawyer) => {
+    Swal.fire({
+      title: `Performance: ${lawyer.name}`,
+      html: `
+        <div class="text-left space-y-4 p-4">
+          <div class="flex justify-between border-b pb-2">
+            <span class="font-bold">Total Consultations:</span>
+            <span class="text-primary font-black">${Math.floor(Math.random() * 500) + 50}</span>
+          </div>
+          <div class="flex justify-between border-b pb-2">
+            <span class="font-bold">Avg. Rating:</span>
+            <span class="text-amber-500 font-black">${lawyer.rating} ⭐</span>
+          </div>
+          <div class="flex justify-between border-b pb-2">
+            <span class="font-bold">Response Rate:</span>
+            <span class="text-green-500 font-black">${lawyer.responseRate}%</span>
+          </div>
+          <div class="flex justify-between border-b pb-2">
+            <span class="font-bold">Platform Revenue Generated:</span>
+            <span class="font-black">${lawyer.revenue}</span>
+          </div>
+          <div class="mt-4">
+            <p class="text-xs text-slate-500 font-bold uppercase mb-2">Growth Trend (Last 30 Days)</p>
+            <div class="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+               <div class="bg-primary h-full" style="width: 75%"></div>
+            </div>
+          </div>
+        </div>
+      `,
+      confirmButtonText: 'Close',
+      confirmButtonColor: '#197fe6'
+    });
+  };

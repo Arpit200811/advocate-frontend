@@ -22,10 +22,21 @@ import { useData } from "../../context/DataContext";
 
 const CreateOffer = () => {
   const navigate = useNavigate();
-  const { setOffers } = useData();
+  const { addOffer, categories } = useData();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     promoCode: "WELCOME20",
+    internalName: "",
+    displayTitle: "",
+    description: "",
+    discountType: "Percentage",
+    value: 0,
+    audience: "All Users",
+    targetCategories: [],
+    startDate: new Date().toISOString().split('T')[0],
+    endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    usageLimit: 100,
+    limitPerUser: 1
   });
   const [errors, setErrors] = useState({});
 
@@ -75,7 +86,7 @@ const CreateOffer = () => {
     }
   };
 
-  const handleLaunch = () => {
+  const handleLaunch = async () => {
     if (!validateStep(1) || !validateStep(2)) {
       Swal.fire({
         title: "Validation Failed",
@@ -85,19 +96,22 @@ const CreateOffer = () => {
       return;
     }
 
-    const newOffer = {
-      id: `OFF-${Math.floor(Math.random() * 9000) + 1000}`,
-      name: formData.internalName || formData.displayTitle,
-      type: `${formData.discountType} (${formData.discountType === 'Percentage' ? formData.value + '%' : '$' + formData.value})`,
-      audience: "All Users", // Default for now
-      audienceIcon: "group",
-      duration: "30 Days", // Default for now
-      year: "2024",
-      usage: 0,
-      status: "Active"
+    const offerPayload = {
+      title: formData.internalName || formData.displayTitle,
+      code: formData.promoCode,
+      description: formData.description,
+      discountAmount: Number(formData.value),
+      type: formData.discountType.toLowerCase(),
+      isActive: true,
+      startDate: formData.startDate,
+      expiryDate: formData.endDate,
+      audience: formData.audience,
+      targetCategories: formData.targetCategories,
+      usageLimit: Number(formData.usageLimit),
+      limitPerUser: Number(formData.limitPerUser)
     };
 
-    setOffers(prev => [newOffer, ...prev]);
+    await addOffer(offerPayload);
 
     Swal.fire({
       title: "Offer Launched!",
@@ -163,20 +177,18 @@ const CreateOffer = () => {
                       className="flex items-center gap-3 group cursor-pointer"
                     >
                       <div
-                        className={`size-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
-                          step >= s.id
-                            ? "bg-primary text-white"
-                            : "bg-slate-100 dark:bg-slate-800 text-slate-500"
-                        }`}
+                        className={`size-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${step >= s.id
+                          ? "bg-primary text-white"
+                          : "bg-slate-100 dark:bg-slate-800 text-slate-500"
+                          }`}
                       >
                         {s.id}
                       </div>
                       <span
-                        className={`text-sm font-semibold transition-colors ${
-                          step === s.id
-                            ? "text-slate-900 dark:text-white"
-                            : "text-slate-500"
-                        }`}
+                        className={`text-sm font-semibold transition-colors ${step === s.id
+                          ? "text-slate-900 dark:text-white"
+                          : "text-slate-500"
+                          }`}
                       >
                         {s.label}
                       </span>
@@ -204,7 +216,7 @@ const CreateOffer = () => {
                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                           Internal Campaign Name
                         </label>
-                         <input
+                        <input
                           name="internalName"
                           value={formData.internalName}
                           onChange={handleInputChange}
@@ -268,11 +280,10 @@ const CreateOffer = () => {
                           </label>
                           <div className="grid grid-cols-2 gap-3">
                             <label
-                              className={`relative flex items-center justify-center p-3 border-2 rounded-xl cursor-pointer transition-all ${
-                                formData.discountType === "Percentage"
-                                  ? "border-primary bg-primary/5 text-primary"
-                                  : "border-slate-200 dark:border-slate-700 text-slate-500"
-                              }`}
+                              className={`relative flex items-center justify-center p-3 border-2 rounded-xl cursor-pointer transition-all ${formData.discountType === "Percentage"
+                                ? "border-primary bg-primary/5 text-primary"
+                                : "border-slate-200 dark:border-slate-700 text-slate-500"
+                                }`}
                             >
                               <input
                                 type="radio"
@@ -286,11 +297,10 @@ const CreateOffer = () => {
                               <span className="text-sm font-semibold">Percentage (%)</span>
                             </label>
                             <label
-                              className={`relative flex items-center justify-center p-3 border-2 rounded-xl cursor-pointer transition-all ${
-                                formData.discountType === "Fixed"
-                                  ? "border-primary bg-primary/5 text-primary"
-                                  : "border-slate-200 dark:border-slate-700 text-slate-500"
-                              }`}
+                              className={`relative flex items-center justify-center p-3 border-2 rounded-xl cursor-pointer transition-all ${formData.discountType === "Fixed"
+                                ? "border-primary bg-primary/5 text-primary"
+                                : "border-slate-200 dark:border-slate-700 text-slate-500"
+                                }`}
                             >
                               <input
                                 type="radio"
@@ -301,7 +311,7 @@ const CreateOffer = () => {
                                   setFormData((prev) => ({ ...prev, discountType: "Fixed" }))
                                 }
                               />
-                              <span className="text-sm font-semibold">Fixed Amount ($)</span>
+                              <span className="text-sm font-semibold">Fixed Amount (₹)</span>
                             </label>
                           </div>
                         </div>
@@ -319,7 +329,7 @@ const CreateOffer = () => {
                                 type="number"
                               />
                               <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">
-                                {formData.discountType === "Percentage" ? "%" : "$"}
+                                {formData.discountType === "Percentage" ? "%" : "₹"}
                               </span>
                             </div>
                             {errors.value && <p className="mt-1 text-xs text-rose-500 font-bold">{errors.value}</p>}
@@ -337,7 +347,7 @@ const CreateOffer = () => {
                                 type="number"
                               />
                               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
-                                $
+                                ₹
                               </span>
                             </div>
                           </div>
@@ -381,14 +391,139 @@ const CreateOffer = () => {
                 </section>
               )}
 
-              {/* Targeting and Duration Placeholders for multi-step feel */}
-              {step > 2 && (
-                <section className="bg-white dark:bg-card-dark rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-20 flex flex-col items-center justify-center text-center space-y-4 animate-in fade-in duration-500">
-                   <div className="size-16 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                      <MdSell className="text-4xl" />
-                   </div>
-                   <h3 className="text-xl font-bold">Step {step} Configuration</h3>
-                   <p className="text-slate-500 max-w-xs">Detailed targeting and scheduling logic goes here in the full implementation.</p>
+              {/* Step 3: Targeting */}
+              {step === 3 && (
+                <section className="bg-white dark:bg-card-dark rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden animate-in slide-in-from-bottom-2 duration-300">
+                  <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/30">
+                    <h3 className="text-lg font-bold flex items-center gap-2">
+                      <MdPeople className="text-primary" />
+                      Step 3: Targeting & Audience
+                    </h3>
+                  </div>
+                  <div className="p-8 space-y-8">
+                    <div>
+                      <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-4 uppercase tracking-widest text-[10px]">
+                        Target Audience
+                      </label>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {['All Users', 'New Users', 'Inactive Users'].map((audience) => (
+                          <label
+                            key={audience}
+                            className={`flex flex-col p-4 border-2 rounded-xl cursor-pointer transition-all ${formData.audience === audience
+                              ? 'border-primary bg-primary/5 text-primary'
+                              : 'border-slate-100 dark:border-slate-800 text-slate-500 hover:border-slate-200'
+                              }`}
+                          >
+                            <input
+                              type="radio"
+                              name="audience"
+                              className="hidden"
+                              checked={formData.audience === audience}
+                              onChange={() => setFormData(prev => ({ ...prev, audience }))}
+                            />
+                            <span className="text-sm font-bold">{audience}</span>
+                            <span className="text-[10px] opacity-80 mt-1">
+                              {audience === 'New Users' ? 'Registered in last 7 days' : audience === 'Inactive' ? 'No session in 30 days' : 'Everyone'}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-4 uppercase tracking-widest text-[10px]">
+                        Target Law Categories
+                      </label>
+                      <div className="flex flex-wrap gap-3">
+                        {categories.map((cat) => (
+                          <button
+                            key={cat.id}
+                            onClick={() => {
+                              const targets = formData.targetCategories || [];
+                              const newTargets = targets.includes(cat.id)
+                                ? targets.filter(id => id !== cat.id)
+                                : [...targets, cat.id];
+                              setFormData(prev => ({ ...prev, targetCategories: newTargets }));
+                            }}
+                            className={`px-4 py-2 rounded-full text-xs font-bold border-2 transition-all ${(formData.targetCategories || []).includes(cat.id)
+                              ? 'border-primary bg-primary text-white'
+                              : 'border-slate-100 dark:border-slate-800 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800'
+                              }`}
+                          >
+                            {cat.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </section>
+              )}
+
+              {/* Step 4: Duration */}
+              {step === 4 && (
+                <section className="bg-white dark:bg-card-dark rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden animate-in slide-in-from-bottom-2 duration-300">
+                  <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/30">
+                    <h3 className="text-lg font-bold flex items-center gap-2">
+                      <MdSell className="text-primary" />
+                      Step 4: Duration & Limits
+                    </h3>
+                  </div>
+                  <div className="p-8 space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                          Start Date
+                        </label>
+                        <input
+                          name="startDate"
+                          type="date"
+                          value={formData.startDate}
+                          onChange={handleInputChange}
+                          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                          Expiry Date
+                        </label>
+                        <input
+                          name="endDate"
+                          type="date"
+                          value={formData.endDate}
+                          onChange={handleInputChange}
+                          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                          Total Usage Limit
+                        </label>
+                        <input
+                          name="usageLimit"
+                          type="number"
+                          value={formData.usageLimit}
+                          onChange={handleInputChange}
+                          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary"
+                          placeholder="e.g. 1000"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                          Limit Per User
+                        </label>
+                        <input
+                          name="limitPerUser"
+                          type="number"
+                          value={formData.limitPerUser}
+                          onChange={handleInputChange}
+                          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary"
+                          placeholder="e.g. 1"
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </section>
               )}
 
@@ -466,7 +601,7 @@ const CreateOffer = () => {
                           <h5 className="text-2xl font-black text-white leading-none">
                             {formData.discountType === "Percentage"
                               ? `${formData.value}%`
-                              : `$${formData.value}`}{" "}
+                              : `₹${formData.value}`}{" "}
                             OFF
                           </h5>
                           <p className="text-sm font-medium text-white/90 mt-1">

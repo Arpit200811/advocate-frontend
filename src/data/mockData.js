@@ -55,6 +55,26 @@ export const initialLawyers = [
     avgResponseTime: "1.2h",
     image: "https://lh3.googleusercontent.com/aida-public/AB6AXuCDWOYkA0KAkjyMBx6Dhhyi5udxvMHRiHX-QOie8GhmY7Y1CjoMVmc6psb7LciAVdt8OcdsZmAAZrjDUXuo_0KXHSIH_2dzJpPiQHi_CSRwm7GJUleyqxJRqmLT3bFZSJCzmFoWoT5tOkxWwXmMqlOWvcmO_pvF8T1lwVT8-wXIIrIOAG5BESf3tR7XFjfn4yf1d7HeGZKCA3q3PGgHrhtkuCEvBQRuDf15r9CuuOEEBXaRomXTAX-0g_TiRTJzmDLED221oOH6P6XA",
   },
+  {
+    id: 5,
+    name: "Marcus Vane",
+    specialization: "Criminal Defense",
+    experience: "10 years",
+    rating: 0,
+    reviews: 0,
+    status: "Pending Review",
+    onlineStatus: "Offline",
+    revenue: "$0.00",
+    responseRate: 0,
+    avgResponseTime: "N/A",
+    image: "https://i.pravatar.cc/150?u=5",
+    documents: {
+      passport: { uri: "https://via.placeholder.com/600x400?text=Passport+ID", name: "passport.jpg" },
+      license: { uri: "https://via.placeholder.com/600x400?text=Drivers+License", name: "license.jpg" },
+      barCert: { uri: "https://via.placeholder.com/600x400?text=Bar+Certificate", name: "bar_cert.pdf" },
+      insurance: { uri: "https://via.placeholder.com/600x400?text=Insurance+Policy", name: "insurance.pdf" }
+    }
+  },
 ];
 
 export const initialUsers = [

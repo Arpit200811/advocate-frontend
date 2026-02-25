@@ -23,7 +23,7 @@ import {
 import { useData } from "../../context/DataContext";
 
 const Referrals = () => {
-  const { referralRules, setReferralRules, referralTransactions, topReferrers } = useData();
+  const { referralRules, updateReferralRule, addReferralRule, referralTransactions, topReferrers } = useData();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All Statuses");
 
@@ -35,23 +35,51 @@ const Referrals = () => {
     return matchesSearch && matchesStatus;
   }) || [];
 
-  const toggleRule = (id, currentStatus) => {
+  const toggleRule = async (id, currentStatus) => {
     const action = currentStatus ? "deactivate" : "activate";
-    Swal.fire({
+    const result = await Swal.fire({
       title: `${action.charAt(0).toUpperCase() + action.slice(1)} Rule?`,
       text: `Are you sure you want to ${action} this referral rule?`,
       icon: "question",
       showCancelButton: true,
       confirmButtonColor: currentStatus ? "#ef4444" : "#22c55e",
       confirmButtonText: `Yes, ${action}`,
-    }).then((result) => {
-      if (result.isConfirmed) {
-        setReferralRules((prev) =>
-          prev.map((r) => (r.id === id ? { ...r, isActive: !currentStatus } : r))
-        );
-        Swal.fire("Success", `Rule has been ${action}d.`, "success");
+    });
+
+    if (result.isConfirmed) {
+      await updateReferralRule(id, { isActive: !currentStatus });
+      Swal.fire("Success", `Rule has been ${action}d.`, "success");
+    }
+  };
+
+  const handleCreateRule = async () => {
+    const { value: formValues } = await Swal.fire({
+      title: 'Configure New Referral Rule',
+      html:
+        '<div class="flex flex-col gap-4 p-4">' +
+        '<input id="swal-input1" class="swal2-input m-0 w-full" placeholder="Rule Name (e.g. Festive Bonus)">' +
+        '<input id="swal-input2" type="number" class="swal2-input m-0 w-full" placeholder="Amount (e.g. 100)">' +
+        '<select id="swal-input3" class="swal2-select m-0 w-full"><option value="signup">Signup Bonus</option><option value="event">Event Bonus</option></select>' +
+        '</div>',
+      focusConfirm: false,
+      showCancelButton: true,
+      confirmButtonText: 'Create Rule',
+      preConfirm: () => {
+        return {
+          name: document.getElementById('swal-input1').value,
+          amount: document.getElementById('swal-input2').value,
+          type: document.getElementById('swal-input3').value
+        }
       }
     });
+
+    if (formValues) {
+      if (!formValues.name || !formValues.amount) {
+        return Swal.fire("Error", "All fields are required", "error");
+      }
+      await addReferralRule(formValues);
+      Swal.fire("Success", "New referral rule configured", "success");
+    }
   };
 
   const getStatusStyle = (status) => {
@@ -83,7 +111,10 @@ const Referrals = () => {
           <h1 className="text-3xl font-black tracking-tight mb-2 text-slate-900 dark:text-white">Referral Program Dashboard</h1>
           <p className="text-slate-500 dark:text-slate-400 font-medium">Monitor platform growth metrics and manage reward structures.</p>
         </div>
-        <button className="bg-primary text-white px-5 py-2.5 rounded-lg font-bold text-sm flex items-center gap-2 shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform">
+        <button
+          onClick={handleCreateRule}
+          className="bg-primary text-white px-5 py-2.5 rounded-lg font-bold text-sm flex items-center gap-2 shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform"
+        >
           <MdAddCircle className="text-xl" />
           Configure New Referral Rule
         </button>
@@ -106,7 +137,7 @@ const Referrals = () => {
             <span className="text-slate-500 text-sm font-bold uppercase tracking-wider">Total Rewards Paid</span>
             <span className="bg-green-100 dark:bg-green-500/10 text-green-600 dark:text-green-400 text-xs font-black px-2 py-1 rounded">+8%</span>
           </div>
-          <div className="text-3xl font-black text-slate-900 dark:text-white">$25,680</div>
+          <div className="text-3xl font-black text-slate-900 dark:text-white">₹{(referralTransactions?.reduce((acc, tx) => acc + (tx.amount || 0), 0) || 0).toLocaleString()}</div>
           <div className="mt-4 flex items-center gap-2 text-xs font-bold text-slate-400">
             <MdInfo className="text-sm" />
             Payouts processed monthly
@@ -155,7 +186,7 @@ const Referrals = () => {
                       <button className="p-2 hover:bg-slate-200 dark:hover:bg-border-dark rounded-lg transition-colors text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
                         <MdEdit className="text-xl" />
                       </button>
-                      <div 
+                      <div
                         onClick={() => toggleRule(rule.id, rule.isActive)}
                         className={`w-10 h-5 rounded-full relative cursor-pointer transition-colors ${rule.isActive ? 'bg-primary' : 'bg-slate-300 dark:bg-slate-700'}`}
                       >
@@ -190,7 +221,7 @@ const Referrals = () => {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className={`text-sm font-black ${idx === 0 ? 'text-primary' : 'text-slate-900 dark:text-white'}`}>${ref.earned.toLocaleString()}</p>
+                  <p className={`text-sm font-black ${idx === 0 ? 'text-primary' : 'text-slate-900 dark:text-white'}`}>₹{ref.earned.toLocaleString()}</p>
                 </div>
               </div>
             ))}
@@ -215,7 +246,7 @@ const Referrals = () => {
             </div>
             <div className="relative">
               <MdFilterList className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm" />
-              <select 
+              <select
                 className="bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark rounded-lg pl-9 pr-8 py-2 text-sm appearance-none focus:ring-2 focus:ring-primary text-slate-600 dark:text-slate-300 font-bold outline-none cursor-pointer"
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
@@ -268,7 +299,7 @@ const Referrals = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <span className="text-sm font-black text-slate-900 dark:text-white">$ {tx.amount.toFixed(2)}</span>
+                      <span className="text-sm font-black text-slate-900 dark:text-white">₹ {tx.amount.toFixed(2)}</span>
                     </td>
                     <td className="px-6 py-4 text-right">
                       <button className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
